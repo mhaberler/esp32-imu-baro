@@ -3,6 +3,8 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+pcap/
+
 # Compiled Object files
 *.slo
 *.lo
@@ -32,3 +34,14 @@
 *.exe
 *.out
 *.app
+.vscode/
+ignored/
+defunct/
+include/buildinfo.h
+src/teleplot/sample
+lib/Threadsafe
+config-mah/
+default_16MB-orig.csv
+docs/salea-reporter-imu.png
+docs/teleplot3d.png
+docs/buildsteps-linux.txt
