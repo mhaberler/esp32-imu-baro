@@ -1,0 +1,42 @@
+[submodule "lib/Adafruit_AHRS"]
+	path = lib/Adafruit_AHRS
+	url = https://github.com/BalloonWare/Adafruit_AHRS.git
+[submodule "lib/CmdParser"]
+	path = lib/CmdParser
+	url = https://github.com/pvizeli/CmdParser.git
+[submodule "lib/Arduino_BMI270_BMM150"]
+	path = lib/Arduino_BMI270_BMM150
+	url = https://github.com/mhaberler/Arduino_BMI270_BMM150.git
+[submodule "lib/SparkFun_MPU-9250-DMP_Arduino_Library"]
+	path = lib/SparkFun_MPU-9250-DMP_Arduino_Library
+	url = https://github.com/mhaberler/SparkFun_MPU-9250-DMP_Arduino_Library.git
+[submodule "lib/Exponential_Smoothing"]
+	path = lib/Exponential_Smoothing
+	url = https://github.com/mhaberler/Exponential_Smoothing.git
+[submodule "lib/Stats"]
+	path = lib/Stats
+	url = https://github.com/mhaberler/Stats.git
+[submodule "lib/WebSerial"]
+	path = lib/WebSerial
+	url = https://github.com/mhaberler/WebSerial.git
+[submodule "lib/StreamLib"]
+	path = lib/StreamLib
+	url = https://github.com/mhaberler/StreamLib.git
+[submodule "lib/lockless_tripplebuffer"]
+	path = lib/lockless_tripplebuffer
+	url = https://github.com/mhaberler/lockless_tripplebuffer.git
+[submodule "lib/NeoTee"]
+	path = lib/NeoTee
+	url = https://github.com/mhaberler/NeoTee.git
+[submodule "lib/NTRIP-client-for-Arduino"]
+	path = lib/NTRIP-client-for-Arduino
+	url = https://github.com/mhaberler/NTRIP-client-for-Arduino.git
+[submodule "lib/SparkFun_u-blox_GNSS_Arduino_Library"]
+	path = lib/SparkFun_u-blox_GNSS_Arduino_Library
+	url = https://github.com/mhaberler/SparkFun_u-blox_GNSS_Arduino_Library.git
+[submodule "lib/TinyGPSPlus"]
+	path = lib/TinyGPSPlus
+	url = https://github.com/mhaberler/TinyGPSPlus.git
+[submodule "lib/Fmt"]
+	path = lib/Fmt
+	url = https://github.com/mhaberler/arduino-fmt.git
