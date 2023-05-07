@@ -57,6 +57,8 @@ void help(options_t &options, CmdParser *cp) {
               options.report_rate);
   Console.fmt("  imu  <freq> # set imu sampling rate (HZ): {:.1f}\n",
               options.imu_rate);
+  Console.fmt("  br  <freq> # set background task rate (HZ): {:.1f}\n",
+              options.background_rate);
 
   Console.fmt("  baro # toggle 'report barometer sensors' flag: {}\n",
               B2S(options.report_baro));
@@ -92,8 +94,8 @@ void help(options_t &options, CmdParser *cp) {
   Console.fmt("  par # show key params\n");
 
   Console.fmt("  sg # show serial GPS status\n");
-  Console.fmt(
-      "  sg rx tx speed # set serial GPS pins, speed - save and reboot\n");
+  Console.fmt("  sg rx tx speed uart # set serial GPS pins, speed, uart#- save "
+              "and reboot\n");
 
   Console.fmt("  ahrs <integer> # select AHRS algorithm: {}\n",
               options.ahrs_algo);
@@ -101,6 +103,9 @@ void help(options_t &options, CmdParser *cp) {
   Console.fmt("     1 # Madgewick\n");
   Console.fmt("     2 # Mahoney\n");
   // Console.fmt("     4 # har-in-air Mahoney\n");
+
+  Console.fmt("  debug  [integer] # show or set debug level: {}\n",
+              options.debug);
 
   Console.fmt("  save\n");
   Console.fmt(
@@ -237,21 +242,30 @@ void initShell(void) {
   });
   cmdCallback.addCmd("REPORT", [](CmdParser *cp) {
     if (cp->getParamCount() != 2) {
-      Console.fmt("need a float parameter\n");
+      Console.fmt("current report rate: {:.1f} Hz\n", options.report_rate);
       return;
     }
     options.report_rate = atof(cp->getCmdParam(1));
-    setReporterRate(options.report_rate);
+    reporterTask->setRate(1000.0 / options.report_rate);
     Console.fmt("report rate set to {:.1f} Hz\n", options.report_rate);
   });
   cmdCallback.addCmd("IMU", [](CmdParser *cp) {
     if (cp->getParamCount() != 2) {
-      Console.fmt("need a float parameter");
+      Console.fmt("current IMU rate: {:.1f} Hz\n", options.imu_rate);
       return;
     }
     options.imu_rate = atof(cp->getCmdParam(1));
-    setSensorRate(options.imu_rate);
+    sensorTask->setRate(1000.0 / options.imu_rate);
     Console.fmt("IMU update rate set to {:.1f} Hz\n", options.imu_rate);
+  });
+    cmdCallback.addCmd("BR", [](CmdParser *cp) {
+    if (cp->getParamCount() != 2) {
+      Console.fmt("current background rate: {:.1f} Hz\n", options.background_rate);
+      return;
+    }
+    options.imu_rate = atof(cp->getCmdParam(1));
+    backgroundTask->setRate(1000.0 / options.background_rate);
+    Console.fmt("IMU update rate set to {:.1f} Hz\n", options.background_rate);
   });
   cmdCallback.addCmd("HPR", [](CmdParser *cp) {
     options.report_hpr = !options.report_hpr;
@@ -305,7 +319,14 @@ void initShell(void) {
     selectAHRS(options, config);
     Console.fmt("AHRS algorithm set to: {}\n", algoName(options.ahrs_algo));
   });
-
+  cmdCallback.addCmd("DEB", [](CmdParser *cp) {
+    if (cp->getParamCount() != 2) {
+      Console.fmt("debug level: {}\n", options.debug);
+      return;
+    }
+    options.debug = atoi(cp->getCmdParam(1));
+    Console.fmt("debug level set to: {}\n", options.debug);
+  });
   cmdCallback.addCmd("NED", [](CmdParser *cp) {
     options.ned = !options.ned;
     Console.fmt("North-East-Down adjustment: {}\n", B2S(options.ned));
@@ -354,9 +375,10 @@ void initShell(void) {
   cmdCallback.addCmd("SG", [](CmdParser *cp) {
     if (cp->getParamCount() == 1) {
       Console.fmt("serial GPS status:");
-      Console.fmt("serial GPS: rx={} tx={} speed={} TinyGPSPlus={}\n",
+      Console.fmt("configured for: rx={} tx={} speed={} "
+                  "UART{} TinyGPSPlus={}\n",
                   options.gps_rx_pin, options.gps_tx_pin, options.gps_speed,
-                  serialGps.libraryVersion());
+                  GPS_UART, serialGps.libraryVersion());
       serialGpsStats();
       return;
     }
@@ -365,6 +387,7 @@ void initShell(void) {
       options.gps_rx_pin = atoi(cp->getCmdParam(1));
       options.gps_tx_pin = atoi(cp->getCmdParam(2));
       options.gps_speed = atoi(cp->getCmdParam(3));
+      // options.gps_uart = atoi(cp->getCmdParam(4));
       Console.fmt("serial GPS - params set to: rx={} tx={} speed={}\n",
                   options.gps_rx_pin, options.gps_tx_pin, options.gps_speed);
       init_serial_gps(options);
@@ -398,7 +421,7 @@ void serialCmdComplete(CmdParser &cmdParser, bool found) {
 }
 
 void testSerial() {
-  if (Serial && Serial.available()) {
+  while (Serial && Serial.available()) {
     uint8_t readChar = Serial.read();
     cmdCallback.updateCmdProcessing(&shell, &buffer, readChar, serialwriteFunc,
                                     serialCmdComplete);

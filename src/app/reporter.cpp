@@ -1,22 +1,26 @@
-#include "Ticker.h"
 #include "TimerStats.h"
 #include "custom.hpp"
 #include "defs.hpp"
+#include <SparkFun_u-blox_GNSS_Arduino_Library.h>
 
 extern TripleBuffer<sensor_state_t> triple_buffer;
 extern TimerStats customImuStats, imuStats, slowSensorStats;
 
 TimerStats reporterStats, customReporterStats;
-static Ticker reporter_ticker, stats_ticker;
-static bool run_reporter, run_stats;
 
 static uint32_t last_report_us; // micros() of last report
 static uint32_t last_report_ms; // millis() of last report
 
+static UBX_NAV_PVT_data_t ub_nav_pvt;
+static uint32_t ub_nav_pvt_ms;
+
+void ublox_nav_pvt(UBX_NAV_PVT_data_t *ub) {
+  ub_nav_pvt_ms = millis();
+  memcpy(&ub_nav_pvt, ub, sizeof(ub_nav_pvt));
+}
+
 static void emitStats(config_t &config, options_t &opt,
                       DynamicJsonDocument &doc);
-
-double round_(double d) { return floor(d + 0.5); }
 
 void reporter(config_t &config, options_t &opt) {
 #ifdef REPORT_PIN
@@ -35,15 +39,12 @@ void reporter(config_t &config, options_t &opt) {
 
   const sensor_state_t &ss = triple_buffer.getReadRef();
 
-  // while the current snap is being processed,
-  // let the sensor task query another set of slow sensors
-  triggerSlowSensorUpdate();
-
   DynamicJsonDocument doc(JSON_SIZE);
 
   reporterStats.Start();
 
   uint32_t now = micros();
+  uint32_t now_ms = millis();
 
   // for IMU and derived values, use timestamp recorded in sensor_state_t
   uint32_t its = ss.last_imu_update / 1000;
@@ -231,14 +232,24 @@ void reporter(config_t &config, options_t &opt) {
   if (true) {
     if (GPSFIX3D(serialGps) && serialGps.altitude.isUpdated()) {
       if (options.teleplot_viewer) {
-        teleplot.update_ms("serialGps.alt", millis(),
+        teleplot.update_ms("serialGps.alt", its,
                            serialGps.altitude.meters(), meter,
                            TELEPLOT_FLAG_NOPLOT);
       } else {
         JsonObject j = doc.createNestedObject("serialGps");
-        j["t"] = millis(); // FIXME wrong
+        j["t"] = its; // FIXME wrong
         j["alt"] = serialGps.altitude.meters();
       }
+    }
+  }
+  if (ub_nav_pvt_ms > last_report_ms) {
+    if (options.teleplot_viewer) {
+      teleplot.update_ms("ubloxGps.alt", millis(), ub_nav_pvt.hMSL / 1000.0,
+                         meter, TELEPLOT_FLAG_NOPLOT);
+    } else {
+      JsonObject j = doc.createNestedObject("ubloxGps");
+      j["t"] = millis(); // FIXME wrong
+      j["alt"] = ub_nav_pvt.hMSL / 1000.0;
     }
   }
 
@@ -299,22 +310,32 @@ static void emitStats(config_t &config, options_t &opt,
       m["slowSensor.mean"] = slowSensorStats.Mean();
     }
   }
+
   if (opt.memory_usage) {
-    uint8_t ssp = (int)(100.0 *
-                        (REPORTERTASK_STACKSIZE -
-                         uxTaskGetStackHighWaterMark(reporterTaskHandle)) /
-                        REPORTERTASK_STACKSIZE);
+    uint8_t ssp =
+        (int)(100.0 *
+              (REPORTERTASK_STACKSIZE -
+               uxTaskGetStackHighWaterMark(reporterTask->GetHandle())) /
+              REPORTERTASK_STACKSIZE);
 
     uint8_t rsp = (int)(100.0 *
                         (SENSORTASK_STACKSIZE -
-                         uxTaskGetStackHighWaterMark(sensorTaskHandle)) /
+                         uxTaskGetStackHighWaterMark(sensorTask->GetHandle())) /
                         SENSORTASK_STACKSIZE);
+    uint8_t bsp =
+        (int)(100.0 *
+              (BACKGROUNDTASK_STACKSIZE -
+               uxTaskGetStackHighWaterMark(backgroundTask->GetHandle())) /
+              BACKGROUNDTASK_STACKSIZE);
+
     uint32_t freeHeap = ESP.getFreeHeap();
 
     if (opt.teleplot_viewer) {
       teleplot.update_ms("reporterStack", millis(), ssp, percent_,
                          TELEPLOT_FLAG_NOPLOT);
       teleplot.update_ms("sensorStack", millis(), rsp, percent_,
+                         TELEPLOT_FLAG_NOPLOT);
+      teleplot.update_ms("backgroundStack", millis(), bsp, percent_,
                          TELEPLOT_FLAG_NOPLOT);
       teleplot.update_ms("freeHeap", millis(), freeHeap, bytes_,
                          TELEPLOT_FLAG_NOPLOT);
@@ -323,45 +344,8 @@ static void emitStats(config_t &config, options_t &opt,
       m["t"] = millis();
       m["reporterStack"] = rsp;
       m["sensorStack"] = ssp;
+      m["backgroundStack"] = bsp;
       m["freeHeap"] = freeHeap;
     }
   }
 }
-
-#ifdef MULTICORE
-
-void reporterTask(void *p) {
-  while (true) {
-    if (run_reporter) {
-      reporter(config, options);
-      run_reporter = false;
-    }
-    watchDogRefresh();
-    delay(1); // FIXME
-  }
-}
-
-static void setter(bool *flag) { *flag = true; }
-
-void setRate(Ticker &ticker, const float Hz, bool *flag) {
-  if (ticker.active()) {
-    ticker.detach();
-  }
-  ticker.attach_ms(1000 / Hz, setter, flag);
-}
-
-void setReporterRate(const float hz) {
-  setRate(reporter_ticker, hz, &run_reporter);
-}
-void setStatsRate(const float hz) { setRate(stats_ticker, hz, &run_stats); }
-
-TaskHandle_t reporterTaskHandle = NULL;
-const char *reporterTaskName = "reporterTask";
-
-bool initreporterTask(void) {
-  xTaskCreateUniversal(reporterTask, reporterTaskName, REPORTERTASK_STACKSIZE,
-                       NULL, REPORTERTASK_PRIORITY, &reporterTaskHandle,
-                       REPORTERTASK_CORE);
-  return reporterTaskHandle != NULL;
-}
-#endif

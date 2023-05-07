@@ -12,19 +12,14 @@
 #include <ESPAsyncWebServer.h>
 #include <ESPmDNS.h>
 
-#include "Ticker.h"
 #include "time.h"
 #include <CmdBuffer.hpp>
 #include <CmdCallback.hpp>
 #include <CmdParser.hpp>
 
-#include <NeoTeeStream.h>
-#include <StreamUtils.h>
 #include <WebSerial.h>
 #include <WiFiMulti.h>
 #include <WiFiUdp.h>
-
-Ticker flushTicker;
 
 AsyncWebServer server(80);
 
@@ -36,16 +31,6 @@ IPAddress teleplotSrv((uint32_t)0);
 extern CmdCallback<NUM_COMMANDS> cmdCallback;
 extern CmdBuffer<CMD_BUFSIZE> buffer;
 extern CmdParser shell;
-
-#define WS_BUF 1400
-#define SERIAL_BUF 512
-
-WriteBufferingStream bufferedSerialOut(Serial, SERIAL_BUF);
-WriteBufferingStream bufferedWebSerialOut(WebSerial, WS_BUF);
-Stream *streams[2] = {&bufferedSerialOut, &bufferedWebSerialOut};
-NeoTeeStream tee(streams, sizeof(streams) / sizeof(streams[0]));
-
-Fmt Console(&tee);
 
 Teleplot teleplot;
 
@@ -86,13 +71,6 @@ void notFound(AsyncWebServerRequest *request) {
 int WifiSetup(options_t &opt) {
   int64_t millis_offset;
   time_t tt;
-
-  flushTicker.attach_ms(500, []() {
-    Console.flush();
-    bufferedWebSerialOut.flush();
-    WebSerial.flush();
-    bufferedSerialOut.flush();
-  });
 
   if (opt.num_ssid < 1) {
     Console.fmt("no WiFi access points configured, not starting WiFi\n");

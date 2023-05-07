@@ -2,7 +2,7 @@
 #pragma once
 #include "defaults.hpp"
 
-void init_serial_gps(const options_t &opt);
+bool init_serial_gps(const options_t &opt);
 void check_serial_gps(void);
 void serialGpsStats(void);
 

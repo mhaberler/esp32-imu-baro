@@ -1,6 +1,6 @@
 #include "espstatus.hpp"
 #include "Esp.h"
-#include "buildinfo.h"
+#include "Version.h"
 #include <Fmt.h>
 
 void heap_report(Fmt &s, const char *fn, const int line) {
@@ -69,7 +69,8 @@ void platform_report(Fmt &s) {
         ESP.getCpuFreqMHz(), ESP.getSdkVersion());
   s.fmt("PS RAM size: {} PS RAM free: {}\n", ESP.getPsramSize(),
         ESP.getFreePsram());
-  s.fmt("Flash size: {} speed: {}\n", flashChipSize(), flashChipSpeed());
+  // this is wrong:
+  // s.fmt("Flash size: {} speed: {}\n", flashChipSize(), flashChipSpeed());
 }
 
 void build_setup_report(Fmt &s) {
@@ -78,9 +79,16 @@ void build_setup_report(Fmt &s) {
   s.fmt("git branch: {}\n", GIT_BRANCH);
   s.fmt("Author: {}\n", GIT_AUTHOR);
   s.fmt("Subject: {}\n", GIT_SUBJECT);
-  s.fmt("Commit date: {}\n", GIT_COMMIT_DATE);
+  s.fmt("Commit date: {}\n\n", GIT_COMMIT_DATE);
 
   s.fmt("compiled " __DATE__ " " __TIME__ " \n");
+
+  s.fmt("PIOENV={}\n", PIOENV);
+  s.fmt("PIOPLATFORM={}\n", PIOPLATFORM);
+  s.fmt("PIOFRAMEWORK={}\n", PIOFRAMEWORK);
+  s.fmt("PROJECT_DIR={}\n", PROJECT_DIR);
+  s.fmt("BUILD_DIR={}\n", BUILD_DIR);
+  s.fmt("BUILD_TYPE={}\n", BUILD_TYPE);
   s.fmt("PLATFORMIO={}\n", PLATFORMIO);
   s.fmt("ARDUINO_BOARD={}\n", ARDUINO_BOARD);
   s.fmt("ARDUINO_VARIANT={}\n", ARDUINO_VARIANT);

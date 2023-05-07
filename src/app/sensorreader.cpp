@@ -1,4 +1,3 @@
-
 #include "FlowSensor.hpp"
 #include "TimerStats.h"
 #include "custom.hpp"
@@ -11,9 +10,6 @@ static sensor_state_t initTB = {
 TripleBuffer<sensor_state_t> triple_buffer(initTB);
 
 TimerStats imuStats, customImuStats, slowSensorStats;
-static bool run_lowrate_sensors;
-static Ticker sensor_ticker;
-static bool run_sensors;
 
 void initGyroCalibration(float gx, float gy, float gz, config_t &config) {
   // prime the min/max ranges from last gyro reading
@@ -23,9 +19,9 @@ void initGyroCalibration(float gx, float gy, float gz, config_t &config) {
   config.max_z = config.min_z = gz / SENSORS_RADS_TO_DPS;
 }
 
-#ifdef FLOWSENSOR_PIN
 extern FlowSensor flow_sensor;
-#endif
+
+static int sequence;
 
 void handleSensors(config_t &config, const options_t &options) {
 #ifdef IMU_PIN
@@ -252,11 +248,11 @@ void handleSensors(config_t &config, const options_t &options) {
 
   slowSensorStats.Start();
 
-  if (run_lowrate_sensors) {
 #ifdef EXTRA_PIN
-    TOGGLE(EXTRA_PIN);
+  TOGGLE(EXTRA_PIN);
 #endif
-
+  switch (sequence++ & 7) {
+  case 0:
     if (config.bmp390_avail) {
       if (bmp.performReading()) {
         baro_report_t &bp = state.baro_values[USE_BARO_BMP3XX];
@@ -265,6 +261,9 @@ void handleSensors(config_t &config, const options_t &options) {
         bp.timestamp = millis();
       }
     }
+    break;
+
+  case 2:
     if (config.lps22_avail) {
       sensors_event_t event;
       lps2x_pressure->getEvent(&event);
@@ -273,6 +272,9 @@ void handleSensors(config_t &config, const options_t &options) {
       bp.alt = hPa2meters(bp.hpa, SEALEVELPRESSURE_HPA);
       bp.timestamp = event.timestamp;
     }
+    break;
+
+  case 4:
     if (config.dps3xx_avail) {
       sensors_event_t event;
       dps3xx_pressure->getEvent(&event);
@@ -281,17 +283,35 @@ void handleSensors(config_t &config, const options_t &options) {
       bp.alt = hPa2meters(bp.hpa, SEALEVELPRESSURE_HPA);
       bp.timestamp = event.timestamp;
     }
-#ifdef FLOWSENSOR_PIN
+    break;
+
+  case 5:
     if (config.flowsensor_avail) {
       flow_sensor.getReport(state.flowsensor_values);
     }
+    break;
+
+  case 1:
+  case 3:
+  case 6:
+    if (config.ubloxi2c_avail) {
+#ifdef UBLOX_PIN
+      TOGGLE(UBLOX_PIN);
 #endif
+      ublox_loopcheck();
+#ifdef UBLOX_PIN
+      TOGGLE(UBLOX_PIN);
+#endif
+    }
+    break;
+  default:
+    break;
+  }
 
 #ifdef EXTRA_PIN
-    TOGGLE(EXTRA_PIN);
+  TOGGLE(EXTRA_PIN);
 #endif
-    run_lowrate_sensors = false;
-  }
+
   slowSensorStats.Stop();
 
   customImuStats.Start();
@@ -306,31 +326,3 @@ void handleSensors(config_t &config, const options_t &options) {
   digitalWrite(IMU_PIN, LOW);
 #endif
 }
-
-#ifdef MULTICORE
-
-void sensorTask(void *p) {
-  while (true) {
-    if (run_sensors) {
-      handleSensors(config, options);
-      run_sensors = false;
-    }
-    check_serial_gps();
-    watchDogRefresh();
-    delay(1); // FIXME
-  }
-}
-
-void triggerSlowSensorUpdate(void) { run_lowrate_sensors = true; }
-
-void setSensorRate(const float hz) { setRate(sensor_ticker, hz, &run_sensors); }
-
-TaskHandle_t sensorTaskHandle = NULL;
-const char *sensorTaskName = "sensorTask";
-
-bool initSensorTask(void) {
-  xTaskCreateUniversal(sensorTask, sensorTaskName, SENSORTASK_STACKSIZE, NULL,
-                       SENSORTASK_PRIORITY, &sensorTaskHandle, SENSORTASK_CORE);
-  return sensorTaskHandle != NULL;
-}
-#endif

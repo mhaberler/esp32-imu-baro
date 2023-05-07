@@ -26,13 +26,13 @@ void customInitCode(const config_t &config, options_t &options) {
 }
 
 void customIMUrateCode(const sensor_state_t &state, const options_t &options) {
-#ifdef EXTRA_PIN
-  TOGGLE(EXTRA_PIN);
+#ifdef CUSTOM_PIN
+  TOGGLE(CUSTOM_PIN);
 #endif
 
 // custom code here
-#ifdef EXTRA_PIN
-  TOGGLE(EXTRA_PIN);
+#ifdef CUSTOM_PIN
+  TOGGLE(CUSTOM_PIN);
 #endif
 }
 
@@ -71,12 +71,12 @@ void customCommands(const config_t &config, options_t &options) {
   Console.fmt("customCommands:\n");
 #ifdef SMOOTHING_DEMO
   cmdCallback.addCmd("ALPHA", [](CmdParser *cp) {
-    if (cp->getParamCount() != 2) {
-      Console.fmt("need a float parameter\n");
+    if (cp->getParamCount() == 1) {
+      Console.fmt("alpha: {}\n", custom.alpha);
       return;
     }
     custom.alpha = atof(cp->getCmdParam(1));
-    Console.fmt("selected alpha {}\n", custom.alpha);
+    Console.fmt("setting alpha: {}\n", custom.alpha);
   });
 #endif
 }

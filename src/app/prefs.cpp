@@ -26,15 +26,18 @@ static options_t defaults = {
     .report_rate = REPORT_RATE,
     .imu_rate = IMU_RATE,
     .stats_rate = STATS_RATE,
+    .background_rate = BACKGROUND_RATE,
     .selected_imu = DEV_NONE,
     .which_baro = USE_BARO_LPS22,
     .flowsensor_pin = FLOWSENSOR_PIN,
     .alpha = ALPHA,
     .num_ssid = 0,
     .tpPort = -1,
+    .gps_uart = GPS_UART,
     .gps_speed = SERIAL_GPS_SPEED,
     .gps_rx_pin = SERIAL_GPS_RXPIN,
     .gps_tx_pin = SERIAL_GPS_TXPIN,
+    .debug = 0,
 };
 
 bool readPrefs(options_t &opt) {

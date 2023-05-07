@@ -3,13 +3,13 @@
 #include <TinyGPS++.h>
 
 TinyGPSPlus serialGps;
-HardwareSerial GPSSerial(2);
+HardwareSerial GPSSerial(GPS_UART);
 
-void init_serial_gps(const options_t &opt) {
+bool init_serial_gps(const options_t &opt) {
+
   GPSSerial.begin(opt.gps_speed, SERIAL_8N1, opt.gps_rx_pin, opt.gps_tx_pin);
-  Console.fmt("serial GPS: rx={} tx={} speed={} TinyGPSPlus={}\n",
-              opt.gps_rx_pin, opt.gps_tx_pin, opt.gps_speed,
-              serialGps.libraryVersion());
+  Console.fmt("serialGPS enabled on UART{}\n", GPS_UART);
+  return true;
 }
 
 void check_serial_gps(void) {

@@ -29,6 +29,10 @@
 #define STATS_RATE 0.0
 #endif
 
+#ifndef BACKGROUND_RATE
+#define BACKGROUND_RATE 10.0
+#endif
+
 #ifndef REPORT_MEMORY
 #define REPORT_MEMORY false
 #endif
@@ -44,6 +48,9 @@
 #define GPS_MAXAGE 2000 // millis
 #endif
 
+#ifndef GPS_UART
+#define GPS_UART 2
+#endif
 #ifndef SERIAL_GPS_SPEED
 #define SERIAL_GPS_SPEED 9600
 #endif
@@ -59,14 +66,29 @@
 #define BMP3XX_ALTERNATE_ADDRESS (0x76)
 #define LPS2X_ALTERNATE_ADDRESS (0x5c)
 #define DPS3XX_ALTERNATE_ADDRESS (0x76)
+#define CMPS14_I2CADDR_DEFAULT 0x60
+
+#define UBLOX_DEFAULT_ADDRESS (0x42)
+#define UBLOX_WAIT 5000
+#define NAV_FREQUENCY 10 //  per second
+
 #define JSON_SIZE 4096
 #define NUM_COMMANDS 50
 #define CMD_BUFSIZE 256
 
-#define SENSORTASK_CORE 0
-#define SENSORTASK_PRIORITY 2
+
+#define APP_CPU 1   // has good timing
+#define PRO_CPU 0   // does all the housekeeping
+
+#define SENSORTASK_CORE APP_CPU
+#define SENSORTASK_PRIORITY 3
 #define SENSORTASK_STACKSIZE 16384
 
-#define REPORTERTASK_CORE 1
-#define REPORTERTASK_PRIORITY 0 // idle task has 0
-#define REPORTERTASK_STACKSIZE 32768
+#define REPORTERTASK_CORE PRO_CPU
+#define REPORTERTASK_PRIORITY 2 // loop task has 1
+#define REPORTERTASK_STACKSIZE 16384
+
+#define BACKGROUNDTASK_CORE PRO_CPU
+#define BACKGROUNDTASK_PRIORITY 2
+#define BACKGROUNDTASK_STACKSIZE 8192
+

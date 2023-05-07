@@ -1,15 +1,14 @@
 #include "FlowSensor.hpp"
 #include "defs.hpp"
 
-void initOtherwSensors(options_t &options, config_t &config) {
+void initOtherSensors(options_t &options, config_t &config) {
 
-#ifdef FLOWSENSOR_PIN
   if (options.flowsensor_pin > -1) {
     flow_sensor.begin(options.flowsensor_pin);
     flow_sensor.enable();
     config.flowsensor_avail = true;
   }
-#endif
+
 
   // try red-port connected sensors before internally wired sensors
   // so they take precedence
@@ -76,5 +75,4 @@ void initOtherwSensors(options_t &options, config_t &config) {
     lps2x_pressure = lps.getPressureSensor();
     lps2x_pressure->printSensorDetails();
   }
-  init_serial_gps(options);
 }

@@ -1,6 +1,7 @@
 
 #ifndef _DEFS_HPP_
 #define _DEFS_HPP_
+#include "freertos-all.h"
 #include <ArduinoJson.h>
 
 #ifdef M5UNIFIED
@@ -36,10 +37,9 @@
 #include <FlowSensor.hpp>
 #include <Fmt.h>
 #include <SparkFunMPU9250-DMP.h>
+#include <SparkFun_u-blox_GNSS_Arduino_Library.h>
 #include <esp_task_wdt.h>
 #include <lockless_tripplebuffer/TripleBuffer.h>
-
-#define CMPS14_I2CADDR_DEFAULT 0x60
 
 #define SEALEVELPRESSURE_HPA (1013.25)
 #define B2S(x) (x ? "true" : "false")
@@ -182,6 +182,9 @@ typedef struct {
   bool bmm150_avail;
   bool mpu6886_avail;
   bool flowsensor_avail;
+  bool ubloxi2c_avail;
+  bool serialgps_avail;
+  bool wire_avail, wire1_avail;
 
   IPAddress tpHost;
   int tpPort;
@@ -218,11 +221,13 @@ typedef struct {
   bool ned;
   bool timing_stats;
   bool memory_usage;
+
   // HZ
   // < 0: off
   float report_rate;
   float imu_rate;
   float stats_rate;
+  float background_rate;
   device_type_t selected_imu;
   const char *selected_imu_name;
   use_baro_t which_baro;
@@ -241,8 +246,15 @@ typedef struct {
   // teleplot
   int32_t tpPort;
   char tpHost[SSID_SIZE];
+
+  // serial GPS
+  int32_t gps_uart;
   int32_t gps_speed;
   int32_t gps_rx_pin, gps_tx_pin;
+
+  // debug flag
+  int debug;
+
 } options_t;
 extern options_t options;
 
@@ -252,6 +264,7 @@ extern CmdBuffer<CMD_BUFSIZE> buffer;
 extern CmdParser shell;
 
 extern bool motion_cal;
+extern volatile bool run_reporter, run_stats, run_sensors, run_flush;
 extern const char *baro_types[];
 
 extern const char *sensorTaskName;
@@ -276,12 +289,21 @@ extern const char *percent_;
 // Streams
 extern Fmt Console;
 extern Teleplot teleplot;
-extern TaskHandle_t sensorTaskHandle, reporterTaskHandle;
+
+extern CyclicTask *backgroundTask, *sensorTask, *reporterTask;
+
+extern Ticker ubloxStartupTicker, stats_ticker;
+void flushBuffers(void);
 
 void initShell(void);
 void testSerial(void);
 void testWebSerial(void);
 void i2cScan(void);
+
+void ublox_setup(void);
+bool ublox_detect(const config_t &config, bool debug);
+void ublox_loopcheck(void);
+void ublox_nav_pvt(UBX_NAV_PVT_data_t *ub);
 
 #include "tinygpsmisc.hpp"
 
@@ -291,14 +313,14 @@ bool defaultPrefs(options_t &opt);
 bool wipePrefs(void);
 
 bool selectAHRS(options_t &opt, config_t &config);
-void handleImu(sensor_state_t *state);
+void handleSensors(config_t &config, const options_t &options);
+void reporter(config_t &config, options_t &opt);
 void printSensorsDetected(void);
 void printHelp(options_t &options);
 void printCurrentCalibration(void);
 const char *boardType(void);
 
 const char *algoName(ahrs_algo_t algo);
-// void MotionCal(sensor_state_t &state, options_t &options);
 void MotionCal(sensor_state_t &state, const options_t &options,
                config_t &config);
 
@@ -306,20 +328,12 @@ int WifiSetup(options_t &opt);
 int browseService(const char *service, const char *proto);
 void printLocalTime(sensor_state_t *state);
 void flushAll(void);
-
-bool initSensorTask(void);
-void setSensorRate(const float hz);
-
-bool initreporterTask(void);
-void setReporterRate(const float);
-
-void triggerSlowSensorUpdate(void);
 void setStatsRate(const float hz);
 
-void setRate(Ticker &ticker, const float Hz, bool *flag);
+void setRate(Ticker &ticker, const float Hz, volatile bool *flag);
 
 void initIMU(options_t &options, config_t &config);
-void initOtherwSensors(options_t &options, config_t &config);
+void initOtherSensors(options_t &options, config_t &config);
 
 #define OPT(x) options->x
 
@@ -342,8 +356,6 @@ extern Adafruit_BNO08x *bno08x;
 extern Adafruit_MPU6050 *mpu6050;
 extern MPU9250_DMP *mpu9250_dmp;
 extern Adafruit_MPU6886 *mpu6886;
-#ifdef FLOWSENSOR_PIN
 extern FlowSensor flow_sensor;
-#endif
 
 #endif

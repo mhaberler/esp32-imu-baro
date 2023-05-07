@@ -40,3 +40,14 @@
 [submodule "lib/Fmt"]
 	path = lib/Fmt
 	url = https://github.com/mhaberler/arduino-fmt.git
+[submodule "lib/Functor"]
+	path = lib/Functor
+	url = https://github.com/mhaberler/Functor.git
+[submodule "lib/arduino-freertos-addons"]
+	path = lib/arduino-freertos-addons
+	url = https://github.com/mhaberler/arduino-freertos-addons.git
+[submodule "platformio_version_increment"]
+	path = platformio_version_increment
+	url = https://github.com/mhaberler/platformio_version_increment.git
+
+

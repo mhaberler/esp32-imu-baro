@@ -3,7 +3,12 @@
 #include "TimerStats.h"
 #include "custom.hpp"
 #include "defs.hpp"
+#include "freertos-all.h"
+#include <NeoTeeStream.h>
+#include <SparkFun_u-blox_GNSS_Arduino_Library.h>
 #include <StreamLib.h>
+#include <StreamUtils.h>
+#include <WebSerial.h>
 
 Adafruit_FXOS8700 fxos = Adafruit_FXOS8700(0x8700A, 0x8700B);
 Adafruit_FXAS21002C fxas = Adafruit_FXAS21002C(0x0021002C);
@@ -24,13 +29,10 @@ Adafruit_BNO08x *bno08x;
 Adafruit_MPU6050 *mpu6050;
 MPU9250_DMP *mpu9250_dmp;
 Adafruit_MPU6886 *mpu6886;
-#ifdef FLOWSENSOR_PIN
 FlowSensor flow_sensor;
-#endif
 
 bool motion_cal;
-
-volatile bool run_imu;
+volatile bool run_stats;
 
 options_t options = {
     .selected_imu_name = "<none>",
@@ -46,6 +48,8 @@ config_t config = {.accel_type = ACCEL_NONE,
                    .gyro_name = "<none>",
                    .magnetometer_type = MAG_NONE,
                    .magnetometer_name = "<none>",
+                   .wire_avail = false,
+                   .wire1_avail = false,
                    .gcal_samples = -1};
 
 // teleplot units
@@ -63,6 +67,34 @@ const char *bool_ = "bool";
 const char *bytes_ = "bytes";
 const char *counter_ = "counter";
 const char *percent_ = "%";
+
+#define WS_BUF 1400
+#define SERIAL_BUF 512
+
+void background(void);
+
+WriteBufferingStream bufferedSerialOut(Serial, SERIAL_BUF);
+WriteBufferingStream bufferedWebSerialOut(WebSerial, WS_BUF);
+Stream *streams[2] = {&bufferedSerialOut, &bufferedWebSerialOut};
+NeoTeeStream tee(streams, sizeof(streams) / sizeof(streams[0]));
+
+Ticker flushTicker, ubloxStartupTicker, reporter_ticker, stats_ticker,
+    sensor_ticker;
+;
+
+Fmt Console(&tee);
+
+CyclicTask *backgroundTask = new CyclicTask(
+    "background", BACKGROUNDTASK_STACKSIZE, BACKGROUNDTASK_PRIORITY,
+    []() { background(); }, 1000.0 / BACKGROUND_RATE);
+
+CyclicTask *sensorTask = new CyclicTask(
+    "fast", SENSORTASK_STACKSIZE, SENSORTASK_PRIORITY,
+    []() { handleSensors(config, options); }, 1000.0 / IMU_RATE);
+
+CyclicTask *reporterTask = new CyclicTask(
+    "slow", REPORTERTASK_STACKSIZE, REPORTERTASK_PRIORITY,
+    []() { reporter(config, options); }, 1000.0 / BACKGROUND_RATE);
 
 void printSensorsDetected(void) {
   Console.fmt("{}{}{}{} a={} g={} m={}\n", config.dps3xx_avail ? "dps3xx " : "",
@@ -128,13 +160,16 @@ void setup(void) {
   while (!Serial) {
     yield();
   }
+  Console.fmt("reading stored config: {}\n",
+              readPrefs(options) ? "OK" : "FAILED");
 
-  Console.fmt("\n\n--------------------\n");
-  platform_report(Console);
-  psram_report(Console, __FILE__, __LINE__);
-  build_setup_report(Console);
-  heap_report(Console, __FILE__, __LINE__);
-  Console.fmt("\n\n--------------------\n\n");
+  config.serialgps_avail = init_serial_gps(options);
+
+  // start our own background task early so serial flushing works
+  // loop() becomes a noop
+  // make sure everything called from background() is initalized at this point
+  backgroundTask->setRate(1000.0 / options.background_rate);
+  backgroundTask->Start(BACKGROUNDTASK_CORE);
 
   // set I2C clock to 400kHz
   // running out of time in handleImu() with 100kHz
@@ -148,16 +183,30 @@ void setup(void) {
   // #ifdef HAVE_WIRE1
   //   Wire1.begin(32, 33, I2C_CLOCK_SPEED);
   // #endif
-
-  Wire.begin();
+  config.wire_avail = Wire.begin();
   Wire.setClock(400000);
   Console.fmt("Wire I2C speed: {}\n", Wire.getClock());
 
-#ifdef HAVE_WIRE1
-  Wire1.begin();
-  Wire.setClock(400000);
-  Console.fmt("Wire1 I2C speed: {}\n", Wire1.getClock());
-#endif
+  // #ifdef HAVE_WIRE1
+  config.wire1_avail = Wire1.begin();
+  if (config.wire1_avail) {
+    Wire.setClock(400000);
+    Console.fmt("Wire1 I2C speed: {}\n", Wire1.getClock());
+  } else {
+    Console.fmt("Wire1 not available\n");
+  }
+
+  // #endif
+
+  Console.fmt("\n\n--------------------\n");
+  platform_report(Console);
+  Console.fmt("\n\n");
+  psram_report(Console, __FILE__, __LINE__);
+  Console.fmt("\n\n");
+  build_setup_report(Console);
+  Console.fmt("\n\n");
+  heap_report(Console, __FILE__, __LINE__);
+  Console.fmt("\n\n--------------------\n\n");
 
   // timing pins
 #ifdef IMU_PIN
@@ -172,25 +221,21 @@ void setup(void) {
   pinMode(EXTRA_PIN, OUTPUT);
   digitalWrite(EXTRA_PIN, LOW);
 #endif
-#ifdef LOOP_PIN
-  pinMode(LOOP_PIN, OUTPUT);
-  digitalWrite(LOOP_PIN, LOW);
+#ifdef BACKGROUND_PIN
+  pinMode(BACKGROUND_PIN, OUTPUT);
+  digitalWrite(BACKGROUND_PIN, LOW);
 #endif
 #ifdef ISR_PIN
   pinMode(ISR_PIN, OUTPUT);
   digitalWrite(ISR_PIN, LOW);
 #endif
-  Console.fmt("reading stored config: {}\n",
-              readPrefs(options) ? "OK" : "FAILED");
+#ifdef UBLOX_PIN
+  pinMode(UBLOX_PIN, OUTPUT);
+  digitalWrite(UBLOX_PIN, LOW);
+#endif
   // options.selected_imu = DEV_NONE; // recover
   options.selected_imu_name = imu_devices[options.selected_imu].name;
-  customCommands(config, options);
-  customInitCode(config, options);
-  initShell();
 
-#ifdef WIFI
-  WifiSetup(options);
-#endif
   Console.fmt("board type: {}\n", boardType());
 
   if (!config.cal.begin()) {
@@ -202,57 +247,91 @@ void setup(void) {
     Console.fmt("No calibration loaded/found... will start with defaults\n");
   } else {
     Console.fmt("Loaded existing calibration\n");
-    config.cal.printSavedCalibration();
+    // config.cal.printSavedCalibration();
   }
 
+  initOtherSensors(options, config);
   initIMU(options, config);
-  initOtherwSensors(options, config);
-
   selectAHRS(options, config);
 
-#ifdef CUSTOM_WATCHDOG_SECONDS
+  ubloxStartupTicker.once_ms(5000, []() {
+    Console.fmt("delayed ublox startup:\n");
+    config.ubloxi2c_avail = ublox_detect(config, options.debug > 9);
+    Console.fmt("ublox startup ok: {}\n", B2S(config.ubloxi2c_avail));
+    if (config.ubloxi2c_avail) {
+      ublox_setup();
+    }
+  });
+
+  customCommands(config, options);
+  customInitCode(config, options);
+  initShell();
+
+#ifdef WIFI
+  WifiSetup(options);
+#endif
+
+#if defined(CUSTOM_WATCHDOG_SECONDS) && (CUSTOM_WATCHDOG_SECONDS > 0)
   extern bool loopTaskWDTEnabled;
   loopTaskWDTEnabled = false; // use our own
   watchDogSetup(CUSTOM_WATCHDOG_SECONDS);
 #endif
 
-  Console.fmt("starting {} on core {} .. ", sensorTaskName, SENSORTASK_CORE);
-  Console.fmt("{}\n", initSensorTask() ? "OK" : "FAILED");
+  sensorTask->setRate(1000.0 / options.imu_rate);
+  sensorTask->Start(SENSORTASK_CORE);
 
-  Console.fmt("starting {} on core {} .. ", reporterTaskName,
-              REPORTERTASK_CORE);
-  Console.fmt("{}\n", initreporterTask() ? "OK" : "FAILED");
+  reporterTask->setRate(1000.0 / options.report_rate);
+  reporterTask->Start(REPORTERTASK_CORE);
 
   setStatsRate(0.2);
-  setSensorRate(options.imu_rate);
-  delay(500); // skip over initial samples which can contain garbage
-  setReporterRate(options.report_rate);
 
 #ifdef TEST_LOG
   teleplot.log("startup");
 #endif
 
-  // printHelp(options);
+  vTaskSuspend(NULL);
 }
 
-void loop(void) {
-#ifdef LOOP_PIN
-  digitalWrite(LOOP_PIN, HIGH);
+// make loop exit immediately to destroy "loopTask"
+// setup MUST vTaskSuspend(NULL) at the end of setup
+void loop(void) { return; }
+
+// the readl backgground task
+void background(void) {
+#ifdef BACKGROUND_PIN
+  digitalWrite(BACKGROUND_PIN, HIGH);
 #endif
-  // if (run_imu) {
-  //   handleImu(&imu_state);
-  //   run_imu = false;
-  // }
-  // if (run_reporter) {
-  //   reporter(&imu_state);
-  //   run_reporter = false;
-  // }
   if (!motion_cal) {
     testSerial();
   }
-#ifdef LOOP_PIN
-  digitalWrite(LOOP_PIN, LOW);
-#endif
+  check_serial_gps();
   watchDogRefresh();
-  delay(1);
+  flushBuffers();
+#ifdef BACKGROUND_PIN
+  digitalWrite(BACKGROUND_PIN, LOW);
+#endif
+}
+
+void setSensorRate(const float hz) { setRate(sensor_ticker, hz, &run_sensors); }
+
+void setReporterRate(const float hz) {
+  setRate(reporter_ticker, hz, &run_reporter);
+}
+void setStatsRate(const float hz) { setRate(stats_ticker, hz, &run_stats); }
+
+static void setter(volatile bool *flag) { *flag = true; }
+
+void setRate(Ticker &ticker, const float Hz, volatile bool *flag) {
+  if (ticker.active()) {
+    ticker.detach();
+  }
+  ticker.attach(1.0 / Hz, setter, flag);
+}
+
+
+void flushBuffers() {
+  Console.flush();
+  bufferedWebSerialOut.flush();
+  WebSerial.flush();
+  bufferedSerialOut.flush();
 }
