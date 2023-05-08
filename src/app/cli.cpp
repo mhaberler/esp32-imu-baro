@@ -341,9 +341,9 @@ void initShell(void) {
   });
 
   cmdCallback.addCmd("PAR", [](CmdParser *cp) {
-    Console.fmt("imu={} baro={} ned={} cal={} kf={}\n",
+    Console.fmt("imu={} baro={} ned={} cal={} kf={:x}\n",
                 options.selected_imu_name, baro_types[options.which_baro],
-                B2S(options.ned), B2S(options.apply_cal), options.which_kftype);
+                B2S(options.ned), B2S(options.apply_cal), (int) options.which_kfmask);
     Console.fmt("irate={:.1f} rrate={:.1f} filter={}\n", options.imu_rate,
                 options.report_rate, B2S(options.run_filter));
     Console.fmt("mDNS tpdest={}:{}\n", config.tpHost.toString().c_str(),

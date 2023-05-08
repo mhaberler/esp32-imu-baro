@@ -125,7 +125,6 @@ typedef enum {
   USE_BARO_MAX
 } use_baro_t;
 
-typedef enum { KF_2 = 0, KF_3 = 1, KF_4 = 2, KF_4D = 3 } kftype_t;
 
 typedef struct {
   float hpa;          // hectoPascal
@@ -231,7 +230,7 @@ typedef struct {
   device_type_t selected_imu;
   const char *selected_imu_name;
   use_baro_t which_baro;
-  kftype_t which_kftype;
+  uint32_t which_kfmask;
 
   int flowsensor_pin;
 
