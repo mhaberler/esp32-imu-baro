@@ -9,6 +9,7 @@
 #include <StreamLib.h>
 #include <StreamUtils.h>
 #include <WebSerial.h>
+#include <LittleFS.h>
 
 Adafruit_FXOS8700 fxos = Adafruit_FXOS8700(0x8700A, 0x8700B);
 Adafruit_FXAS21002C fxas = Adafruit_FXAS21002C(0x0021002C);
@@ -267,6 +268,15 @@ void setup(void) {
   customInitCode(config, options);
   initShell();
 
+  if (LittleFS.begin()) {
+    Console.fmt("LittleFS  total {}, used {} ({:.1f}%)\n",
+                LittleFS.totalBytes(), LittleFS.usedBytes(),
+                100.0 * LittleFS.usedBytes() / LittleFS.totalBytes());
+    // listDir(LittleFS, "/www", 2);
+  } else {
+    Console.fmt("LittleFS init failed\n");
+  }
+
 #ifdef WIFI
   WifiSetup(options);
 #endif
@@ -327,7 +337,6 @@ void setRate(Ticker &ticker, const float Hz, volatile bool *flag) {
   }
   ticker.attach(1.0 / Hz, setter, flag);
 }
-
 
 void flushBuffers() {
   Console.flush();

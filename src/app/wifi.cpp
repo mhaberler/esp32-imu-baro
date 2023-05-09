@@ -17,11 +17,13 @@
 #include <CmdCallback.hpp>
 #include <CmdParser.hpp>
 
+#include <LittleFS.h>
 #include <WebSerial.h>
 #include <WiFiMulti.h>
 #include <WiFiUdp.h>
 
 AsyncWebServer server(80);
+  AsyncWebSocket *tpws;
 
 WiFiUDP udp;
 WiFiMulti wifiMulti;
@@ -153,8 +155,36 @@ int WifiSetup(options_t &opt) {
       }
     }
     // rest web setup
-    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-      request->send(200, "text/plain", "Hello, world");
+    // server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+    //   request->send(200, "text/plain", "Hello, world");
+    // });
+
+    // server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
+    //     AsyncWebServerResponse* response = request->beginResponse(LittleFS,
+    //     "/www/index.html.gz", "text/html");
+    //     response->addHeader("Content-Encoding", "gzip");
+    //     request->send(response);
+    // });
+
+    server.serveStatic("/", LittleFS, "/www/");
+
+    tpws = new AsyncWebSocket("/teleplot");
+    tpws->onEvent([&](AsyncWebSocket *server, AsyncWebSocketClient *client,
+                      AwsEventType type, void *arg, uint8_t *data,
+                      size_t len) -> void {
+      if (type == WS_EVT_CONNECT) {
+        Console.fmt("Client connection received");
+      } else if (type == WS_EVT_DISCONNECT) {
+        Console.fmt("Client disconnected");
+
+      } else if (type == WS_EVT_DATA) {
+        
+        Console.fmt("Received Websocket Data");
+
+        // if (_RecvFunc != NULL) {
+        //   _RecvFunc(data, len);
+        // }
+      }
     });
 
     // Send a GET request to <IP>/get?message=<message>
