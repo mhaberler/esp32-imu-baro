@@ -49,3 +49,15 @@
 [submodule "platformio_version_increment"]
 	path = platformio_version_increment
 	url = https://github.com/mhaberler/platformio_version_increment.git
+[submodule "teleplot"]
+	path = teleplot
+	url = https://github.com/mhaberler/teleplot.git
+[submodule "lib/ESPxWebFlMgr"]
+	path = lib/ESPxWebFlMgr
+	url = https://github.com/mhaberler/ESPxWebFlMgr.git
+[submodule "lib/ESPUI"]
+	path = lib/ESPUI
+	url = https://github.com/mhaberler/ESPUI.git
+[submodule "src/esp32-asyncwebserver-fileupload-example"]
+	path = src/esp32-asyncwebserver-fileupload-example
+	url = https://github.com/mhaberler/esp32-asyncwebserver-fileupload-example.git
