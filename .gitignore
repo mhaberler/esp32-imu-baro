@@ -48,7 +48,8 @@ docs/buildsteps-linux.txt
 mahconfig/
 data/www
 version
-include/Version.*
-
-
+include/Version.h
+notes.txt
+*.pyc
+retired/
 
