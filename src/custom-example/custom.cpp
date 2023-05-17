@@ -22,7 +22,7 @@ void customInitCode(const config_t &config, options_t &options) {
 #ifdef SMOOTHING_DEMO
   custom.alpha = DEFAULT_ALPHA;
 #endif
-  Console.fmt("customInitCode done\n");
+  LOGD("customInitCode done");
 }
 
 void customIMUrateCode(const sensor_state_t &state, const options_t &options) {
@@ -62,21 +62,21 @@ void customReportingRateCode(const sensor_state_t &state,
 
 void customHelpText(const config_t &config, const options_t &options) {
 #ifdef SMOOTHING_DEMO
-  Console.fmt("  alpha # set smoothing alpha: {}\n", options.alpha);
+  LOGD("  alpha # set smoothing alpha: {}", options.alpha);
 #endif
 }
 
 void customCommands(const config_t &config, options_t &options) {
 
-  Console.fmt("customCommands:\n");
+  LOGD("customCommands:");
 #ifdef SMOOTHING_DEMO
   cmdCallback.addCmd("ALPHA", [](CmdParser *cp) {
     if (cp->getParamCount() == 1) {
-      Console.fmt("alpha: {}\n", custom.alpha);
+      LOGD("alpha: {}", custom.alpha);
       return;
     }
     custom.alpha = atof(cp->getCmdParam(1));
-    Console.fmt("setting alpha: {}\n", custom.alpha);
+    LOGD("setting alpha: {}", custom.alpha);
   });
 #endif
 }
