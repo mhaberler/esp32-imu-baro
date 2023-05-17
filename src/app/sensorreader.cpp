@@ -152,9 +152,9 @@ void handleSensors(config_t &config, const options_t &options) {
     // so we're done
     config.gcal_samples = -1; // once only
 
-    Console.fmt("gyro: zero rate offset: ({:.4f}, {:.4f}, {:.4f}) °/s\n",
+    LOGD("gyro: zero rate offset: ({:.4f}, {:.4f}, {:.4f}) °/s",
                 config.mid_x, config.mid_y, config.mid_z);
-    Console.fmt("gyro: rad/s noise: ({:.4f}, {:.4f}, {:.4f})\n",
+    LOGD("gyro: rad/s noise: ({:.4f}, {:.4f}, {:.4f})",
                 config.max_x - config.min_x, config.max_y - config.min_y,
                 config.max_z - config.min_z);
 
@@ -162,9 +162,9 @@ void handleSensors(config_t &config, const options_t &options) {
     config.cal.gyro_zerorate[1] = config.mid_y;
     config.cal.gyro_zerorate[2] = config.mid_z;
     if (!config.cal.saveCalibration()) {
-      Console.fmt("**WARNING** Couldn't save calibration\n");
+      LOGD("**WARNING** Couldn't save calibration");
     } else {
-      Console.fmt("Wrote gyro calibration\n");
+      LOGD("Wrote gyro calibration");
     }
   }
   if (config.gcal_samples > 0) {

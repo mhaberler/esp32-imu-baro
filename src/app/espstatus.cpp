@@ -1,32 +1,124 @@
-#include "espstatus.hpp"
+
+#include "freertos-all.h"
+
 #include "Esp.h"
 #include "Version.h"
+#include "espstatus.hpp"
+#include "logmacros.hpp"
 #include <Fmt.h>
+#include <cstdarg>
 
-void heap_report(Fmt &s, const char *fn, const int line) {
-
-  if (fn && line) {
-    s.fmt("task report from: {}:{}\n", fn, line);
+#define STR(x)
+void task_details(bool bitch, const char *taskName,
+                  TaskHandle_t handle) {
+  TaskHandle_t t = NULL;
+  if (taskName) {
+    t = xTaskGetHandle(taskName);
   }
-  s.fmt("task {} core {} stack high water mark {}\n", pcTaskGetTaskName(NULL),
-        xPortGetCoreID(), uxTaskGetStackHighWaterMark(NULL));
+  if (t == NULL) {
+    if (bitch)
+      LOGD("task: handle {} not found", t);
+    return;
+  }
+  if (taskName == NULL) {
+    taskName = pcTaskGetName(handle);
+  }
+  if (taskName == NULL) {
+    if (bitch)
+      LOGD("task: name {} not found", t);
+    return;
+  }
+  // affinity == '0x7fffffff' - no affinity, else core #
+  const char *affinityStr = "";
+  switch (xTaskGetAffinity(t)) {
+  case 0:
+    affinityStr = "core 0";
+    break;
+  case 1:
+    affinityStr = "core 1";
 
-  s.fmt("Total heap: {}\n", ESP.getHeapSize());
-  s.fmt("Free heap: {}\n", ESP.getFreeHeap());
-  s.fmt("lowest level of free heap since boot: {}\n", ESP.getMinFreeHeap());
-  s.fmt("largest block of heap that can be allocated at once: {}\n",
-        ESP.getMaxAllocHeap());
+    break;
+  case 0x7fffffff:
+    affinityStr = "none";
+    break;
+  }
+
+#ifdef configUSE_CORE_AFFINITY // not defined :-/
+                               // vTaskCoreAffinitySet(0,3);
+#endif
+  LOGD("task: {:<16} affinity: {:<6} prio: {} stack HWM: {}", taskName,
+       affinityStr, uxTaskPriorityGet(t), uxTaskGetStackHighWaterMark(t));
 }
 
-void psram_report(Fmt &s, const char *fn, const int line) {
+void task_report(const char *fn, const int line, ...) {
+  // if (fn && line) {
+  //   LOGD("task report from: {}:{}", fn, line);
+  // }
+  // va_list args;
+  // va_start(args, line);
+  // const char *tn = va_arg(args, const char *);
+  // while (tn != NULL) {
+  //   task_details(true, tn);
+  //   tn = va_arg(args, const char *);
+  // }
+  // va_end(args);
+
+  // assorted "well-known" tasks
+  task_details(false, "sensor");   // this project
+  task_details(false, "reporter"); // this project
+
+  task_details(false, "loopTask");        // Arduino
+  task_details(false, "arduino_events");  // Arduino libraries:
+  task_details(false, "https_ota_task");  // Arduino
+  task_details(false, "async_udp");       // Arduino
+  task_details(false, "spp_tx");          // Arduino BluetoothSerial
+                                          // Arduino core:
+  task_details(false, "msc_disk");        // FirmwareMSC.cpp
+  task_details(false, "toneTask");        // Tone.cpp
+  task_details(false, "uart_event_task"); // HardwareSerial.cpp
+  task_details(false, "rmt_rx_task");     // esp32-hal-rmt.c
+  task_details(false, "i2c_slave_task");  // cores//esp32/esp32-hal-i2c-slave.c
+  task_details(false, "usbd");            // esp32-hal-tinyusb.c
+  task_details(false, "rmt_rx_task");     // esp32-hal-rmt.c
+
+  task_details(false, "async_tcp");   // Async_TCP
+  task_details(false, "spk_task");    // M5Unified
+  task_details(false, "mic_task");    // M5Unified
+  task_details(false, "task_memcpy"); // M5GFX
+  task_details(false, "esp_timer");   // esp-idf soft timer
+
+  task_details(false, "main");            // esp-idf misc
+  task_details(false, "console_repl");    // esp-idf misc
+  task_details(false, "btm_rrm_t");       // esp-idf misc
+  task_details(false, "dppT");            // esp-idf misc
+  task_details(false, "wpa2T");           // esp-idf misc
+  task_details(false, "esp_wpa3_hostap"); // esp-idf misc
+  task_details(false, "wpsT");            // esp-idf misc
+
+  // task_details(true, NULL, xTaskGetIdleTaskHandle()); // FreeRTOS idle task
+}
+
+void heap_report(const char *fn, const int line) {
+
   if (fn && line) {
-    s.fmt("psram_report from: {}:{}\n", fn, line);
+    LOGD("heap report from: {}:{}", fn, line);
   }
-  s.fmt("Total PSRAM: {}\n", ESP.getPsramSize());
-  s.fmt("Used PSRAM: {}\n", ESP.getPsramSize() - ESP.getFreePsram());
-  s.fmt("Free PSRAM: {}\n", ESP.getFreePsram());
-  s.fmt("MinFreePsram: {}\n", ESP.getMinFreePsram());
-  s.fmt("getMaxAllocPsram: {}\n", ESP.getMaxAllocPsram());
+  LOGD("Total heap: {}", ESP.getHeapSize());
+  LOGD("Free heap: {}", ESP.getFreeHeap());
+  LOGD("lowest level of free heap since boot: {}", ESP.getMinFreeHeap());
+  LOGD("largest block of heap that can be allocated at once: {}",
+       ESP.getMaxAllocHeap());
+}
+
+void psram_report(const char *fn, const int line) {
+  if (fn && line) {
+    LOGD("psram_report from: {}:{}", fn, line);
+  }
+  LOGD("Total PSRAM: {}", ESP.getPsramSize());
+  LOGD("Used PSRAM: {}", ESP.getPsramSize() - ESP.getFreePsram());
+  LOGD("Free PSRAM: {}", ESP.getFreePsram());
+  LOGD("MinFreePsram: {}", ESP.getMinFreePsram());
+  LOGD("getMaxAllocPsram: {}", ESP.getMaxAllocPsram());
 }
 
 const char *flashChipSpeed(void) {
@@ -63,33 +155,33 @@ const char *flashChipSize(void) {
   }
 }
 
-void platform_report(Fmt &s) {
-  s.fmt("model: {} rev: {} cores: {} cpufreq: {} sdkversion: {}\n",
-        ESP.getChipModel(), ESP.getChipRevision(), ESP.getChipCores(),
-        ESP.getCpuFreqMHz(), ESP.getSdkVersion());
-  s.fmt("PS RAM size: {} PS RAM free: {}\n", ESP.getPsramSize(),
-        ESP.getFreePsram());
+void platform_report(void) {
+  LOGD("model: {} rev: {} cores: {} cpufreq: {} sdkversion: {}",
+       ESP.getChipModel(), ESP.getChipRevision(), ESP.getChipCores(),
+       ESP.getCpuFreqMHz(), ESP.getSdkVersion());
+  LOGD("PS RAM size: {} PS RAM free: {}", ESP.getPsramSize(),
+       ESP.getFreePsram());
   // this is wrong:
-  // s.fmt("Flash size: {} speed: {}\n", flashChipSize(), flashChipSpeed());
+  // LOGD("Flash size: {} speed: {}", flashChipSize(), flashChipSpeed());
 }
 
-void build_setup_report(Fmt &s) {
+void build_setup_report(void) {
+  LOGD("build version: {}", VERSION);
 
-  s.fmt("git SHA: {}\n", GIT_REV);
-  s.fmt("git branch: {}\n", GIT_BRANCH);
-  s.fmt("Author: {}\n", GIT_AUTHOR);
-  s.fmt("Subject: {}\n", GIT_SUBJECT);
-  s.fmt("Commit date: {}\n\n", GIT_COMMIT_DATE);
+  LOGD("git SHA: {}", GIT_REV);
+  LOGD("git branch: {}", GIT_BRANCH);
+  LOGD("Author: {}", GIT_AUTHOR);
+  LOGD("Subject: {}", GIT_SUBJECT);
+  LOGD("Commit date: {}", GIT_COMMIT_DATE);
+  LOGD("compiled " __DATE__ " " __TIME__ " ");
 
-  s.fmt("compiled " __DATE__ " " __TIME__ " \n");
-
-  s.fmt("PIOENV={}\n", PIOENV);
-  s.fmt("PIOPLATFORM={}\n", PIOPLATFORM);
-  s.fmt("PIOFRAMEWORK={}\n", PIOFRAMEWORK);
-  s.fmt("PROJECT_DIR={}\n", PROJECT_DIR);
-  s.fmt("BUILD_DIR={}\n", BUILD_DIR);
-  s.fmt("BUILD_TYPE={}\n", BUILD_TYPE);
-  s.fmt("PLATFORMIO={}\n", PLATFORMIO);
-  s.fmt("ARDUINO_BOARD={}\n", ARDUINO_BOARD);
-  s.fmt("ARDUINO_VARIANT={}\n", ARDUINO_VARIANT);
+  LOGD("PIOENV={}", PIOENV);
+  LOGD("PIOPLATFORM={}", PIOPLATFORM);
+  LOGD("PIOFRAMEWORK={}", PIOFRAMEWORK);
+  LOGD("PROJECT_DIR={}", PROJECT_DIR);
+  LOGD("BUILD_DIR={}", BUILD_DIR);
+  LOGD("BUILD_TYPE={}", BUILD_TYPE);
+  LOGD("PLATFORMIO={}", PLATFORMIO);
+  LOGD("ARDUINO_BOARD={}", ARDUINO_BOARD);
+  LOGD("ARDUINO_VARIANT={}", ARDUINO_VARIANT);
 }

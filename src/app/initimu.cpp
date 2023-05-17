@@ -112,10 +112,10 @@ void initIMU(options_t &options, config_t &config) {
       config.bno08x_avail = bno08x->begin_I2C(BNO08x_I2CADDR_DEFAULT, &Wire);
     }
     if (config.bno08x_avail) {
-      Console.fmt("BNO08x Found!\n");
+      LOGD("BNO08x Found!");
 
       for (int n = 0; n < bno08x->prodIds.numEntries; n++) {
-        Console.fmt("Part: {} Version: {}.{}.{} Build: {}\n",
+        LOGD("Part: {} Version: {}.{}.{} Build: {}",
                     bno08x->prodIds.entry[n].swPartNumber,
                     bno08x->prodIds.entry[n].swVersionMajor,
                     bno08x->prodIds.entry[n].swVersionMinor,
@@ -123,13 +123,13 @@ void initIMU(options_t &options, config_t &config) {
                     bno08x->prodIds.entry[n].swBuildNumber);
       }
       if (!bno08x->enableReport(SH2_ACCELEROMETER)) {
-        Console.fmt("Could not enable accelerometer\n");
+        LOGD("Could not enable accelerometer");
       }
       if (!bno08x->enableReport(SH2_GYROSCOPE_CALIBRATED)) {
-        Console.fmt("Could not enable gyroscope\n");
+        LOGD("Could not enable gyroscope");
       }
       if (!bno08x->enableReport(SH2_MAGNETIC_FIELD_CALIBRATED)) {
-        Console.fmt("Could not enable magnetic field calibrated\n");
+        LOGD("Could not enable magnetic field calibrated");
       }
       // FIXME setReports(reportType, reportIntervalUs);
     }

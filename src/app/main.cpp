@@ -3,13 +3,20 @@
 #include "TimerStats.h"
 #include "custom.hpp"
 #include "defs.hpp"
-#include "freertos-all.h"
+#include "fsVisitor.hpp"
+
+#include <LittleFS.h>
 #include <NeoTeeStream.h>
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h>
 #include <StreamLib.h>
 #include <StreamUtils.h>
 #include <WebSerial.h>
-#include <LittleFS.h>
+
+#ifdef SD_SUPPORT
+#include <SD.h>
+#endif
+#define MARK                                                                   \
+  { Serial.printf("mark: %s:%d\n", __FILE__, __LINE__); }
 
 Adafruit_FXOS8700 fxos = Adafruit_FXOS8700(0x8700A, 0x8700B);
 Adafruit_FXAS21002C fxas = Adafruit_FXAS21002C(0x0021002C);
@@ -32,7 +39,9 @@ MPU9250_DMP *mpu9250_dmp;
 Adafruit_MPU6886 *mpu6886;
 FlowSensor flow_sensor;
 
-bool motion_cal;
+bool motion_cal, psRAMavail;
+bool flush_buffers = true;
+
 volatile bool run_stats;
 
 options_t options = {
@@ -79,45 +88,35 @@ WriteBufferingStream bufferedWebSerialOut(WebSerial, WS_BUF);
 Stream *streams[2] = {&bufferedSerialOut, &bufferedWebSerialOut};
 NeoTeeStream tee(streams, sizeof(streams) / sizeof(streams[0]));
 
+Fmt Console(&tee);
+Fmt bSerial(&bufferedSerialOut);
+
+CyclicTask *sensorTask, *reporterTask;
+
 Ticker flushTicker, ubloxStartupTicker, reporter_ticker, stats_ticker,
     sensor_ticker;
-;
 
-Fmt Console(&tee);
-
-CyclicTask *backgroundTask = new CyclicTask(
-    "background", BACKGROUNDTASK_STACKSIZE, BACKGROUNDTASK_PRIORITY,
-    []() { background(); }, 1000.0 / BACKGROUND_RATE);
-
-CyclicTask *sensorTask = new CyclicTask(
-    "fast", SENSORTASK_STACKSIZE, SENSORTASK_PRIORITY,
-    []() { handleSensors(config, options); }, 1000.0 / IMU_RATE);
-
-CyclicTask *reporterTask = new CyclicTask(
-    "slow", REPORTERTASK_STACKSIZE, REPORTERTASK_PRIORITY,
-    []() { reporter(config, options); }, 1000.0 / BACKGROUND_RATE);
+static volatile bool run_flush;
 
 void printSensorsDetected(void) {
-  Console.fmt("{}{}{}{} a={} g={} m={}\n", config.dps3xx_avail ? "dps3xx " : "",
-              config.bmp390_avail ? "bmp3xx " : "",
-              config.lps22_avail ? "lps22 " : "",
-              config.flowsensor_avail ? "flowsensor" : "", config.accel_name,
-              config.gyro_name, config.magnetometer_name);
+  LOGD("{}{}{}{} a={} g={} m={}", config.dps3xx_avail ? "dps3xx " : "",
+       config.bmp390_avail ? "bmp3xx " : "", config.lps22_avail ? "lps22 " : "",
+       config.flowsensor_avail ? "flowsensor" : "", config.accel_name,
+       config.gyro_name, config.magnetometer_name);
 }
 
 void printCurrentCalibration(void) {
-  Console.fmt("accel offsets for zero-g, in m/s^2: {:.4f} {:.4f} {:.4f} \n",
-              config.cal.accel_zerog[0], config.cal.accel_zerog[1],
-              config.cal.accel_zerog[2]);
-  Console.fmt("gyro offsets for zero-rate, in deg/s: {:.4f} {:.4f} {:.4f} \n",
-              config.cal.gyro_zerorate[0] * SENSORS_RADS_TO_DPS,
-              config.cal.gyro_zerorate[1] * SENSORS_RADS_TO_DPS,
-              config.cal.gyro_zerorate[2] * SENSORS_RADS_TO_DPS);
-  Console.fmt(
-      "mag offsets for hard iron calibration (in uT): {:.4f} {:.4f} {:.4f} \n",
-      config.cal.mag_hardiron[0], config.cal.mag_hardiron[1],
-      config.cal.mag_hardiron[2]);
-  Console.fmt("mag field magnitude (in uT): {:.4f}\n", config.cal.mag_field);
+  LOGD("accel offsets for zero-g, in m/s^2: {:.4f} {:.4f} {:.4f}",
+       config.cal.accel_zerog[0], config.cal.accel_zerog[1],
+       config.cal.accel_zerog[2]);
+  LOGD("gyro offsets for zero-rate, in deg/s: {:.4f} {:.4f} {:.4f}",
+       config.cal.gyro_zerorate[0] * SENSORS_RADS_TO_DPS,
+       config.cal.gyro_zerorate[1] * SENSORS_RADS_TO_DPS,
+       config.cal.gyro_zerorate[2] * SENSORS_RADS_TO_DPS);
+  LOGD("mag offsets for hard iron calibration (in uT): {:.4f} {:.4f} {:.4f}",
+       config.cal.mag_hardiron[0], config.cal.mag_hardiron[1],
+       config.cal.mag_hardiron[2]);
+  LOGD("mag field magnitude (in uT): {:.4f}", config.cal.mag_field);
 }
 
 bool selectAHRS(options_t &opt, config_t &config) {
@@ -136,13 +135,94 @@ bool selectAHRS(options_t &opt, config_t &config) {
     config.filter = new Adafruit_Mahony();
     break;
   case ALGO_HAR_IN_AIR:
-    Console.fmt("not implemented yet");
+    LOGD("not implemented yet");
     return NULL;
     break;
   }
   config.filter->begin((int)options.imu_rate);
   opt.run_filter = tmp; // restore previous run_filter setting
   return true;
+}
+bool init_globals(void) {
+  psRAMavail = ESP.getFreePsram() > 0;
+  LOGD("ESP.getFreePsram = {}", ESP.getFreePsram());
+  return true;
+}
+
+void read_partitions(void) {
+  // bool EspClass::flashRead(uint32_t offset, uint32_t *data, size_t
+  // size)
+  //   ESP.flashRead
+  LOGD("ESP32 Partition table:");
+
+  LOGD("| Type | Sub |  Offset  |   Size   |       Label      |");
+  LOGD("| ---- | --- | -------- | -------- | ---------------- |");
+
+  esp_partition_iterator_t pi = esp_partition_find(
+      ESP_PARTITION_TYPE_ANY, ESP_PARTITION_SUBTYPE_ANY, NULL);
+  if (pi != NULL) {
+    do {
+      const esp_partition_t *p = esp_partition_get(pi);
+      LOGD("| {:>{}x} | {:>{}x} | {:>{}x} | {:>{}x} | {:<16} |", (int)p->type,
+           4, (int)p->subtype, 3, p->address, 8, p->size, 8, (char *)p->label);
+    } while ((pi = (esp_partition_next(pi))));
+  }
+}
+
+bool init_sd(options_t &opt, config_t &config) {
+#ifdef SD_SUPPORT
+#ifdef M5UNIFIED
+  if (opt.sd_cs_pin < 0) {
+    LOGI("SD support disabled via config.");
+    return false;
+  }
+  uint32_t start = millis();
+  while (false == SD.begin(opt.sd_cs_pin, SPI, opt.sd_freq, opt.sd_mountpoint,
+                           5, opt.sd_format_if_empty)) {
+    delay(500);
+    if ((millis() - start) > opt.sd_wait_ms) {
+      LOGI("giving up on SD.");
+      return false;
+    }
+    LOGD("SD waiting... {.f}s", (millis() - start) / 1000.0);
+  }
+  LOGD("SD mounted.");
+  LOGD("SD toplevel directory:");
+  fsVisitor(SD, Console, "/", VA_PRINT);
+  return true;
+#else
+  // if (!SD.begin("/sdcard", true)) {
+  //   LOGD("SD Mount Failed");
+  // }
+#endif
+#else
+  LOGI("SD support not compiled in");
+  return false;
+#endif
+}
+
+bool init_littlefs(options_t &opt, config_t &config) {
+#ifdef LITTLEFS_SUPPORT
+
+  if (LittleFS.begin(opt.lfs_format_if_empty, opt.lfs_mountpoint,
+                     opt.lfs_maxfiles, opt.lfs_partition_label)) {
+    LOGD("LittleFS  total {}, used {} ({:.1f}%)", LittleFS.totalBytes(),
+         LittleFS.usedBytes(),
+         100.0 * LittleFS.usedBytes() / LittleFS.totalBytes());
+    LOGD("listing LittleFS  toplevel directory:  /");
+
+    fsVisitor(LittleFS, Console, "/", VA_PRINT | VA_DEBUG | VA_CACHE);
+
+    return true;
+  } else {
+    LOGD("LittleFS init failed - formatting and reboot");
+    LittleFS.format();
+    ESP.restart();
+  }
+#else
+  LOGI("LittleFS support not compiled in");
+  return false;
+#endif
 }
 
 void setup(void) {
@@ -152,7 +232,18 @@ void setup(void) {
       BAUD; // default=115200. if "Serial" is not needed, set it to 0.
   cfg.led_brightness = 128; // default= 0. system LED brightness (0=off /
                             // 255=max) (※ not NeoPixel)
+                            // cfg.internal_mic = false;
+  cfg.internal_spk = false;
+
   M5.begin(cfg);
+
+  // M5.Display.startWrite();
+  // M5.Display.setCursor(0, 0);
+  // M5.Display.print("REC");
+  // M5.Speaker.setVolume(255);
+
+  // M5.Mic.begin();
+
 #else
   Serial.begin(BAUD);
 #endif
@@ -161,16 +252,37 @@ void setup(void) {
   while (!Serial) {
     yield();
   }
-  Console.fmt("reading stored config: {}\n",
-              readPrefs(options) ? "OK" : "FAILED");
+
+  setup_syslog();
+  set_syslog_loglevel(1);
+  init_globals();
+  read_partitions();
+  flushBuffers();
+
+  bool cfg_read = readPrefs(options);
+  if (!cfg_read) {
+    wipePrefs();
+    getDefaultPrefs(options);
+    savePrefs(options);
+    cfg_read = readPrefs(options);
+    LOGW("options reset to defauls: {}", T2OK(cfg_read));
+  }
+  flushBuffers();
+  init_sd(options, config);
+  flushBuffers();
+  init_littlefs(options, config);
+  flushBuffers();
+  if (cfg_read) {
+
+    // /* Set severity for esp logging system. */
+    // esp_log_level_set("*", CONFIG_ESP_LOG_SEVERITY);
+    // esp_log_level_set("*", ESP_LOG_WARN);
+    set_syslog_loglevel(options.debug);
+  }
+  flushBuffers();
+  LOGD("reading stored config: {}", cfg_read ? "OK" : "FAILED");
 
   config.serialgps_avail = init_serial_gps(options);
-
-  // start our own background task early so serial flushing works
-  // loop() becomes a noop
-  // make sure everything called from background() is initalized at this point
-  backgroundTask->setRate(1000.0 / options.background_rate);
-  backgroundTask->Start(BACKGROUNDTASK_CORE);
 
   // set I2C clock to 400kHz
   // running out of time in handleImu() with 100kHz
@@ -186,28 +298,21 @@ void setup(void) {
   // #endif
   config.wire_avail = Wire.begin();
   Wire.setClock(400000);
-  Console.fmt("Wire I2C speed: {}\n", Wire.getClock());
+  LOGD("Wire I2C speed: {}", Wire.getClock());
 
   // #ifdef HAVE_WIRE1
   config.wire1_avail = Wire1.begin();
   if (config.wire1_avail) {
     Wire.setClock(400000);
-    Console.fmt("Wire1 I2C speed: {}\n", Wire1.getClock());
+    LOGD("Wire1 I2C speed: {}", Wire1.getClock());
   } else {
-    Console.fmt("Wire1 not available\n");
+    LOGD("Wire1 not available");
   }
-
-  // #endif
-
-  Console.fmt("\n\n--------------------\n");
-  platform_report(Console);
-  Console.fmt("\n\n");
-  psram_report(Console, __FILE__, __LINE__);
-  Console.fmt("\n\n");
-  build_setup_report(Console);
-  Console.fmt("\n\n");
-  heap_report(Console, __FILE__, __LINE__);
-  Console.fmt("\n\n--------------------\n\n");
+  flushBuffers();
+  platform_report();
+  psram_report(__FILE__, __LINE__);
+  build_setup_report();
+  heap_report(__FILE__, __LINE__);
 
   // timing pins
 #ifdef IMU_PIN
@@ -237,46 +342,37 @@ void setup(void) {
   // options.selected_imu = DEV_NONE; // recover
   options.selected_imu_name = imu_devices[options.selected_imu].name;
 
-  Console.fmt("board type: {}\n", boardType());
+  LOGD("board type: {}", boardType());
 
   if (!config.cal.begin()) {
-    Console.fmt("Failed to initialize calibration helper\n");
+    LOGD("Failed to initialize calibration helper");
   } else if (!config.cal.loadCalibration()) {
-    Console.fmt("No calibration loaded/found\n");
+    LOGD("No calibration loaded/found");
   }
   if (!config.cal.loadCalibration()) {
-    Console.fmt("No calibration loaded/found... will start with defaults\n");
+    LOGD("No calibration loaded/found... will start with defaults");
   } else {
-    Console.fmt("Loaded existing calibration\n");
+    LOGD("Loaded existing calibration");
     // config.cal.printSavedCalibration();
   }
-
+  flushBuffers();
   initOtherSensors(options, config);
   initIMU(options, config);
   selectAHRS(options, config);
 
-  ubloxStartupTicker.once_ms(5000, []() {
-    Console.fmt("delayed ublox startup:\n");
+  ubloxStartupTicker.once_ms(UBLOX_STARTUP_DELAY, []() {
+    LOGD("delayed ublox startup:");
     config.ubloxi2c_avail = ublox_detect(config, options.debug > 9);
-    Console.fmt("ublox startup ok: {}\n", B2S(config.ubloxi2c_avail));
+    LOGD("ublox startup ok: {}", B2S(config.ubloxi2c_avail));
     if (config.ubloxi2c_avail) {
       ublox_setup();
     }
   });
-
+  flushBuffers();
   customCommands(config, options);
   customInitCode(config, options);
   initShell();
-
-  if (LittleFS.begin()) {
-    Console.fmt("LittleFS  total {}, used {} ({:.1f}%)\n",
-                LittleFS.totalBytes(), LittleFS.usedBytes(),
-                100.0 * LittleFS.usedBytes() / LittleFS.totalBytes());
-    // listDir(LittleFS, "/www", 2);
-  } else {
-    Console.fmt("LittleFS init failed\n");
-  }
-
+  flushBuffers();
 #ifdef WIFI
   WifiSetup(options);
 #endif
@@ -287,26 +383,32 @@ void setup(void) {
   watchDogSetup(CUSTOM_WATCHDOG_SECONDS);
 #endif
 
+  sensorTask = new CyclicTask(
+      "sensor", options.sensor_stack, options.sensor_prio,
+      []() { handleSensors(config, options); }, 1000.0 / IMU_RATE);
+
+  reporterTask = new CyclicTask(
+      "reporter", options.reporter_stack, options.reporter_prio,
+      []() { reporter(config, options); }, 1000.0 / BACKGROUND_RATE);
+
   sensorTask->setRate(1000.0 / options.imu_rate);
-  sensorTask->Start(SENSORTASK_CORE);
+  sensorTask->Start(options.sensor_core);
 
   reporterTask->setRate(1000.0 / options.report_rate);
-  reporterTask->Start(REPORTERTASK_CORE);
+  reporterTask->Start(options.reporter_core);
 
   setStatsRate(0.2);
+
+  task_report(__FILE__, __LINE__, 2, "sensor", "reporter", NULL);
 
 #ifdef TEST_LOG
   teleplot.log("startup");
 #endif
-
-  vTaskSuspend(NULL);
+  flushBuffers();
+  // switch to just setting a flag
+  flushTicker.attach_ms(options.flush_ms, []() { run_flush = true; });
 }
 
-// make loop exit immediately to destroy "loopTask"
-// setup MUST vTaskSuspend(NULL) at the end of setup
-void loop(void) { return; }
-
-// the readl backgground task
 void background(void) {
 #ifdef BACKGROUND_PIN
   digitalWrite(BACKGROUND_PIN, HIGH);
@@ -316,10 +418,17 @@ void background(void) {
   }
   check_serial_gps();
   watchDogRefresh();
-  flushBuffers();
+  if (run_flush) {
+    flushBuffers();
+    run_flush = false;
+  }
 #ifdef BACKGROUND_PIN
   digitalWrite(BACKGROUND_PIN, LOW);
 #endif
+}
+void loop(void) {
+  background();
+  delay(50);
 }
 
 void setSensorRate(const float hz) { setRate(sensor_ticker, hz, &run_sensors); }
@@ -339,6 +448,7 @@ void setRate(Ticker &ticker, const float Hz, volatile bool *flag) {
 }
 
 void flushBuffers() {
+  // this should be thread-locked with Console.write
   Console.flush();
   bufferedWebSerialOut.flush();
   WebSerial.flush();

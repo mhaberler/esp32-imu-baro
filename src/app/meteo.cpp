@@ -1,4 +1,5 @@
-#include "defs.hpp"
+#include "meteo.hpp"
+#include <cmath>
 
 float hPa2meters(float hPa, float seaLevel) {
   // Equation taken from BMP180 datasheet (page 16):

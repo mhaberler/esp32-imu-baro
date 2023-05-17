@@ -1,13 +1,13 @@
 
-#ifndef _DEFS_HPP_
-#define _DEFS_HPP_
-#include "freertos-all.h"
-#include <ArduinoJson.h>
+#pragma once
 
 #ifdef M5UNIFIED
 #include <M5Unified.h>
 #endif
 #include "defaults.hpp"
+
+#include "freertos-all.h"
+#include <ArduinoJson.h>
 
 #include <Adafruit_AHRS.h>
 #include <Adafruit_BMP3XX.h>
@@ -34,15 +34,25 @@
 #include <Ticker.h>
 
 #include "CustomWatchdog.hpp"
+extern bool psRAMavail;
+#include "ArduinoJsonCustom.hpp"
+#include "FS.h"
+#include "logmacros.hpp"
 #include <FlowSensor.hpp>
 #include <Fmt.h>
+#include <LittleFS.h>
 #include <SparkFunMPU9250-DMP.h>
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h>
 #include <esp_task_wdt.h>
 #include <lockless_tripplebuffer/TripleBuffer.h>
+#ifdef FASTLED_TYPE
+#include <FastLED.h>
+#endif
+#include "TreeWalker.hpp"
+#include "meteo.hpp"
 
-#define SEALEVELPRESSURE_HPA (1013.25)
-#define B2S(x) (x ? "true" : "false")
+#define B2S(x) ((x) ? "true" : "false")
+#define T2OK(x) ((x) ? "OK" : "FAILED")
 
 #define RAD2DEG(r) ((r)*57.29577951f)
 #define DEG2RAD(d) ((d)*0.017453292f)
@@ -50,13 +60,13 @@
 
 #define TOGGLE(pin) digitalWrite(pin, !digitalRead(pin))
 
-float hPa2meters(float pascal, float seaLevel = SEALEVELPRESSURE_HPA);
-
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 #define AT __FILE__ ":" TOSTRING(__LINE__)
 
 #define SSID_SIZE 32
+#define IPADR_SIZE 32
+#define WSPATH_SIZE 32
 #define NUM_SSID 10
 
 typedef enum {
@@ -125,6 +135,15 @@ typedef enum {
   USE_BARO_MAX
 } use_baro_t;
 
+// this for da blinkenleds
+typedef enum {
+  ACT_REPORTER,
+  ACT_SENSOR,
+  ACT_LOOP,
+  ACT_IDLEHOOK,
+  ACT_TCPSTACK,
+  ACT_ENDMARKER
+} activitySource_t;
 
 typedef struct {
   float hpa;          // hectoPascal
@@ -200,7 +219,19 @@ typedef struct {
   float min_x, max_x, mid_x;
   float min_y, max_y, mid_y;
   float min_z, max_z, mid_z;
-} config_t;
+
+  // misc status
+  uint8_t num_websocket_clients;
+  uint8_t reporter_stack_util, sensor_stack_util;
+  char *txbuf;
+  size_t txbuf_size;
+
+  // FS stuff
+  bool sd_avail;
+  bool lfs_avail;
+
+  SpiRamJsonDocument *root, *client_result;
+} config_t; // FIXME should be status_t
 
 extern config_t config;
 
@@ -226,7 +257,6 @@ typedef struct {
   float report_rate;
   float imu_rate;
   float stats_rate;
-  float background_rate;
   device_type_t selected_imu;
   const char *selected_imu_name;
   use_baro_t which_baro;
@@ -241,6 +271,10 @@ typedef struct {
   char ssids[NUM_SSID][SSID_SIZE];
   char passwords[NUM_SSID][SSID_SIZE];
   int8_t num_ssid;
+  char hostname[IPADR_SIZE];
+
+  // ntp
+  char ntp_poolname[IPADR_SIZE];
 
   // teleplot
   int32_t tpPort;
@@ -254,6 +288,43 @@ typedef struct {
   // debug flag
   int debug;
 
+  // web etc
+  bool run_webserver;
+  uint16_t webserver_port;
+  bool run_webserial;
+  bool run_tpwebsocket;
+
+  // FS stuff
+  char littlefs_static_path[WSPATH_SIZE];
+  char websocket_path[WSPATH_SIZE];
+  char consolesocket_path[WSPATH_SIZE];
+  char web_default_path[WSPATH_SIZE];
+  char web_user[WSPATH_SIZE];
+  char web_pass[WSPATH_SIZE];
+
+  // default timers, tasking etc
+  uint32_t flush_ms;
+  uint32_t reporter_stack;
+  uint32_t sensor_stack;
+  uint8_t sensor_core;
+  uint8_t reporter_core;
+  uint32_t sensor_prio;
+  uint32_t reporter_prio;
+
+  // SD card
+  uint32_t sd_wait_ms;
+  int8_t sd_cs_pin;
+  uint32_t sd_freq;
+  char sd_mountpoint[WSPATH_SIZE];
+  uint8_t sd_maxfiles;
+  bool sd_format_if_empty;
+
+  // LittleFS
+  bool lfs_format_if_empty;
+  uint8_t lfs_maxfiles;
+  char lfs_mountpoint[WSPATH_SIZE];
+  char lfs_partition_label[WSPATH_SIZE];
+
 } options_t;
 extern options_t options;
 
@@ -263,9 +334,10 @@ extern CmdBuffer<CMD_BUFSIZE> buffer;
 extern CmdParser shell;
 
 extern bool motion_cal;
-extern volatile bool run_reporter, run_stats, run_sensors, run_flush;
+extern volatile bool run_reporter, run_stats, run_sensors;
 extern const char *baro_types[];
 
+extern CyclicTask *sensorTask, *reporterTask;
 extern const char *sensorTaskName;
 extern const char *reporterTaskName;
 
@@ -286,10 +358,8 @@ extern const char *counter_;
 extern const char *percent_;
 
 // Streams
-extern Fmt Console;
+extern Fmt Console, bSerial;
 extern Teleplot teleplot;
-
-extern CyclicTask *backgroundTask, *sensorTask, *reporterTask;
 
 extern Ticker ubloxStartupTicker, stats_ticker;
 void flushBuffers(void);
@@ -308,7 +378,7 @@ void ublox_nav_pvt(UBX_NAV_PVT_data_t *ub);
 
 bool readPrefs(options_t &opt);
 bool savePrefs(options_t &opt);
-bool defaultPrefs(options_t &opt);
+void getDefaultPrefs(options_t &opt);
 bool wipePrefs(void);
 
 bool selectAHRS(options_t &opt, config_t &config);
@@ -323,7 +393,7 @@ const char *algoName(ahrs_algo_t algo);
 void MotionCal(sensor_state_t &state, const options_t &options,
                config_t &config);
 
-int WifiSetup(options_t &opt);
+int WifiSetup(const options_t &opt);
 int browseService(const char *service, const char *proto);
 void printLocalTime(sensor_state_t *state);
 void flushAll(void);
@@ -333,6 +403,14 @@ void setRate(Ticker &ticker, const float Hz, volatile bool *flag);
 
 void initIMU(options_t &options, config_t &config);
 void initOtherSensors(options_t &options, config_t &config);
+
+// webserver
+void configureWebServer(const options_t &opt);
+
+// spdlog
+void setup_syslog(void);
+void set_syslog_loglevel(const int level);
+// tasks
 
 #define OPT(x) options->x
 
@@ -356,5 +434,3 @@ extern Adafruit_MPU6050 *mpu6050;
 extern MPU9250_DMP *mpu9250_dmp;
 extern Adafruit_MPU6886 *mpu6886;
 extern FlowSensor flow_sensor;
-
-#endif

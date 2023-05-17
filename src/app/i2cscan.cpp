@@ -7,24 +7,24 @@
 #include <M5Unified.h>
 
 void i2cScan(void) {
-  Console.fmt("\ninternal I2C devices: ('Wire'):\n");
+  LOGD("\ninternal I2C devices: ('Wire'):");
   bool scan[128];
   M5.In_I2C.scanID(scan);
   for (int i = 8; i < I2C_MAX; ++i) {
     if (scan[i]) {
-      Console.fmt("intern: {:#02x}\n", i);
+      LOGD("intern: {:#02x}", i);
     }
   }
 #ifdef SECONDARY_I2C_PORT
-  Console.fmt("\nexternal I2C (red port) devices: ('Wire1'):\n");
+  LOGD("\nexternal I2C (red port) devices: ('Wire1'):");
   M5.Ex_I2C.scanID(scan);
   for (int i = 8; i < I2C_MAX; ++i) {
     if (scan[i]) {
-      Console.fmt("extern: {:#02x}\n", i);
+      LOGD("extern: {:#02x}", i);
     }
   }
 #endif
-  Console.fmt("\n");
+  LOGD("");
 }
 
 #else
@@ -37,21 +37,21 @@ void printI2CBusScan(TwoWire &theWire, const char *tag) {
   for (uint8_t addr = 0x8; addr <= I2C_MAX; addr++) {
     theWire.beginTransmission(addr);
     if (theWire.endTransmission() == 0) {
-      Console.fmt("{} {:#02x}\n", tag, addr);
+      LOGD("{} {:#02x}", tag, addr);
     }
   }
-  Console.fmt("\n");
+  LOGD("");
 }
 
 void i2cScan(void) {
-  Console.fmt("\n");
-  Console.fmt("Default port (Wire) I2C scan\n");
+  LOGD("");
+  LOGD("Default port (Wire) I2C scan");
   printI2CBusScan(DEFAULT_I2C_PORT, "");
 
 #if defined(SECONDARY_I2C_PORT)
-  Console.fmt("Secondary port (Wire1) I2C scan\n");
+  LOGD("Secondary port (Wire1) I2C scan");
   printI2CBusScan(SECONDARY_I2C_PORT, "";
 #endif
-  Console.fmt("\n\n");
+  LOGD("\n");
 }
 #endif

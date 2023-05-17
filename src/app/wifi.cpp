@@ -9,128 +9,84 @@
 #include <ESP8266WiFi.h>
 #include <ESPAsyncTCP.h>
 #endif
-#include <ESPAsyncWebServer.h>
 #include <ESPmDNS.h>
 
-#include "time.h"
+// #include "time.h"
 #include <CmdBuffer.hpp>
 #include <CmdCallback.hpp>
 #include <CmdParser.hpp>
 
-#include <LittleFS.h>
-#include <WebSerial.h>
+#include <NTPClient.h>
 #include <WiFiMulti.h>
 #include <WiFiUdp.h>
-
-AsyncWebServer server(80);
-  AsyncWebSocket *tpws;
 
 WiFiUDP udp;
 WiFiMulti wifiMulti;
 
+NTPClient timeClient(udp, NTP_POOL);
 IPAddress teleplotSrv((uint32_t)0);
-
-extern CmdCallback<NUM_COMMANDS> cmdCallback;
-extern CmdBuffer<CMD_BUFSIZE> buffer;
-extern CmdParser shell;
 
 Teleplot teleplot;
 
-const char *PARAM_MESSAGE = "message";
-
-const char *ntp1 = "91.206.8.70";
-const char *ntp2 = "78.41.116.149";
-const char *ntp3 = "217.196.145.42";
-const long gmtOffset_sec = 0;
-const int daylightOffset_sec = 0;
-
-void webserialCmdComplete(CmdParser &cmdParser, bool found) {
-  if (!found) {
-    const char *cmd = cmdParser.getCommand();
-    if ((*cmd == '#') || (*cmd == ';')) {
-      // a comment. ignore.
-      return;
-    }
-    Console.fmt("command not found: '{}' \n", cmd);
-    Console.fmt("type 'help' for a list of commands\n");
-  }
-}
-void writeFunc(const uint8_t writeChar) { Console.write(writeChar); }
-
-void recvMsg(uint8_t *data, size_t len) {
-  for (int i = 0; i < len; i++) {
-    cmdCallback.updateCmdProcessing(&shell, &buffer, data[i], writeFunc,
-                                    webserialCmdComplete);
-  }
-  cmdCallback.updateCmdProcessing(&shell, &buffer, '\n', writeFunc,
-                                  webserialCmdComplete);
-}
-
-void notFound(AsyncWebServerRequest *request) {
-  request->send(404, "text/plain", "Not found");
-}
-
-int WifiSetup(options_t &opt) {
+int WifiSetup(const options_t &opt) {
   int64_t millis_offset;
   time_t tt;
 
   if (opt.num_ssid < 1) {
-    Console.fmt("no WiFi access points configured, not starting WiFi\n");
-    Console.fmt("using Serial for reporting\n");
+    LOGD("no WiFi access points configured, not starting WiFi");
+    LOGD("using Serial for reporting");
     teleplot.begin(&Serial);
     return -1;
   }
-  Console.fmt("starting wifi setup...\n");
+  LOGD("starting wifi setup...");
 
   WiFi.persistent(false);
-  WiFi.setHostname(HOSTNAME);
+  WiFi.setHostname(opt.hostname);
   WiFi.mode(WIFI_STA);
 
-  if (MDNS.begin(HOSTNAME)) {
+  // FIXME LOGD("---------WiFi.setSleep(false);");
+  // WiFi.setSleep(false);
+
+  if (MDNS.begin(opt.hostname)) {
     MDNS.addService("http", "tcp", 80);
-    MDNS.addServiceTxt("http", "tcp", "path", "/webserial");
+    if (opt.run_webserial) {
+      MDNS.addServiceTxt("http", "tcp", "path", opt.web_default_path);
+    }
   }
   for (auto i = 0; i < opt.num_ssid; i++) {
-    Console.fmt("\tadding SSID {} pass {}\n", opt.ssids[i], opt.passwords[i]);
+    LOGD("\tadding SSID {} pass {}", opt.ssids[i], opt.passwords[i]);
     wifiMulti.addAP(opt.ssids[i], opt.passwords[i]);
   }
   wl_status_t status = (wl_status_t)wifiMulti.run();
   switch (status) {
   case WL_DISCONNECTED: // no AP, use Serial
-    Console.fmt(
-        "no matching WiFi access points found - using Serial for reporting\n");
+    LOGD("no matching WiFi access points found - using Serial for reporting");
     teleplot.begin(&Serial);
     return -1;
     break;
   case WL_CONNECTED: // all good
-    Console.fmt("IP {} GW {} netmask {} rssi {}\n",
-                WiFi.localIP().toString().c_str(),
-                WiFi.gatewayIP().toString().c_str(),
-                WiFi.subnetMask().toString().c_str(), WiFi.RSSI());
+    LOGD("IP {} GW {} netmask {} rssi {}", WiFi.localIP().toString().c_str(),
+         WiFi.gatewayIP().toString().c_str(),
+         WiFi.subnetMask().toString().c_str(), WiFi.RSSI());
 
     WiFi.printDiag(Console);
+    LOGD("timeClient.forceUpdate: {}",
+                    T2OK(timeClient.forceUpdate()));
+    LOGD("timeClient says; {}", timeClient.getFormattedDate().c_str());
 
-    delay(500); // NTP sometimes fails at startup, so give it some time
-    configTime(gmtOffset_sec, daylightOffset_sec, ntp1, ntp2, ntp3);
-
-    if (!getLocalTime(&config.timeinfo)) {
-      Console.fmt("Failed to obtain time via NTP\n");
-      tt = 0;
-    } else {
-      tt = mktime(&config.timeinfo);
-    }
+    config.timeSinceEpoch = ((int64_t)timeClient.getEpochTime()) * 1000;
     config.timeinfo_millis = millis();
-    config.timeSinceEpoch = ((int64_t)tt) * 1000;
+    timeClient.end();
 
     if (*opt.tpHost != '\0') {
       if (!WiFi.hostByName(opt.tpHost, teleplotSrv)) {
-        Console.fmt("DNS resolve {} failed\n", opt.tpHost);
+        LOGD("DNS resolve {} failed", opt.tpHost);
         break;
       }
       millis_offset = config.timeSinceEpoch - config.timeinfo_millis;
       tt = millis_offset / 1000;
 
-      Console.fmt("Teleplot reftime={}", ctime(&tt));
+      LOGD("Teleplot reftime={}", ctime(&tt));
       teleplot.begin(teleplotSrv, opt.tpPort, millis_offset);
     } else {
       // tpHost/tpPort unset - just use first result of mDNS scan
@@ -139,84 +95,23 @@ int WifiSetup(options_t &opt) {
         config.tpHost = MDNS.IP(n - 1);
         config.tpPort = MDNS.port(n - 1);
 
-        Console.fmt("using teleplot destination to {}:{}\n",
-                    config.tpHost.toString().c_str(), config.tpPort);
+        LOGD("using teleplot destination to {}:{}",
+             config.tpHost.toString().c_str(), config.tpPort);
         millis_offset = config.timeSinceEpoch - config.timeinfo_millis;
         time_t tmp = millis_offset / 1000;
-        Console.fmt("NTP reftime={}", ctime(&tmp));
+        LOGD("NTP reftime={}", ctime(&tmp));
 
         teleplot.begin(config.tpHost, config.tpPort, millis_offset);
       } else {
-        Console.fmt("tpdest not set and no result from mDNS discovery for "
-                    "teleplot/udp\n");
-        Console.fmt("using Serial port\n");
+        LOGD("tpdest not set and no result from mDNS discovery for "
+             "teleplot/udp");
+        LOGD("using Serial port");
         millis_offset = config.timeSinceEpoch - config.timeinfo_millis;
         teleplot.begin(&Serial);
       }
     }
-    // rest web setup
-    // server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-    //   request->send(200, "text/plain", "Hello, world");
-    // });
+    configureWebServer(opt);
 
-    // server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
-    //     AsyncWebServerResponse* response = request->beginResponse(LittleFS,
-    //     "/www/index.html.gz", "text/html");
-    //     response->addHeader("Content-Encoding", "gzip");
-    //     request->send(response);
-    // });
-
-    server.serveStatic("/", LittleFS, "/www/");
-
-    tpws = new AsyncWebSocket("/teleplot");
-    tpws->onEvent([&](AsyncWebSocket *server, AsyncWebSocketClient *client,
-                      AwsEventType type, void *arg, uint8_t *data,
-                      size_t len) -> void {
-      if (type == WS_EVT_CONNECT) {
-        Console.fmt("Client connection received");
-      } else if (type == WS_EVT_DISCONNECT) {
-        Console.fmt("Client disconnected");
-
-      } else if (type == WS_EVT_DATA) {
-        
-        Console.fmt("Received Websocket Data");
-
-        // if (_RecvFunc != NULL) {
-        //   _RecvFunc(data, len);
-        // }
-      }
-    });
-
-    // Send a GET request to <IP>/get?message=<message>
-    server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request) {
-      String message;
-      if (request->hasParam(PARAM_MESSAGE)) {
-        message = request->getParam(PARAM_MESSAGE)->value();
-      } else {
-        message = "No message sent";
-      }
-      request->send(200, "text/plain", "Hello, GET: " + message);
-    });
-
-    // Send a POST request to <IP>/post with a form field message set to
-    // <message>
-    server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {
-      String message;
-      if (request->hasParam(PARAM_MESSAGE, true)) {
-        message = request->getParam(PARAM_MESSAGE, true)->value();
-      } else {
-        message = "No message sent";
-      }
-      request->send(200, "text/plain", "Hello, POST: " + message);
-    });
-
-    server.onNotFound(notFound);
-
-    // WebSerial is accessible at "<IP Address>/webserial" in browser
-    WebSerial.begin(&server);
-    WebSerial.msgCallback(recvMsg);
-
-    server.begin();
     return 0;
     break;
   default:
@@ -226,17 +121,17 @@ int WifiSetup(options_t &opt) {
 }
 
 int browseService(const char *service, const char *proto) {
-  Console.fmt("Browsing for service _{}._{}.local. ...\n", service, proto);
+  LOGD("Browsing for service _{}._{}.local. ...", service, proto);
   int n = MDNS.queryService(service, proto);
   if (n == 0) {
-    Console.fmt("no services found\n");
+    LOGD("no services found");
     return -1;
   } else {
 
-    Console.fmt("{} service(s) found\n", n);
+    LOGD("{} service(s) found", n);
     for (int i = 0; i < n; ++i) {
-      Console.fmt("{}: {} ({}:{})\n", i, MDNS.hostname(i).c_str(),
-                  MDNS.IP(i).toString().c_str(), MDNS.port(i));
+      LOGD("{}: {} ({}:{})", i, MDNS.hostname(i).c_str(),
+           MDNS.IP(i).toString().c_str(), MDNS.port(i));
     }
     return n;
   }

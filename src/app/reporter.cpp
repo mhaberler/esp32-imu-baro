@@ -39,12 +39,12 @@ void reporter(config_t &config, options_t &opt) {
 
   const sensor_state_t &ss = triple_buffer.getReadRef();
 
-  DynamicJsonDocument doc(JSON_SIZE);
+  DynamicJsonDocument doc(JSON_DOCUMENT_SIZE);
 
   reporterStats.Start();
 
   uint32_t now = micros();
-  uint32_t now_ms = millis();
+  // uint32_t now_ms = millis();
 
   // for IMU and derived values, use timestamp recorded in sensor_state_t
   uint32_t its = ss.last_imu_update / 1000;
@@ -312,39 +312,32 @@ static void emitStats(config_t &config, options_t &opt,
   }
 
   if (opt.memory_usage) {
-    uint8_t ssp =
+    config.reporter_stack_util =
         (int)(100.0 *
-              (REPORTERTASK_STACKSIZE -
+              (opt.reporter_stack -
                uxTaskGetStackHighWaterMark(reporterTask->GetHandle())) /
-              REPORTERTASK_STACKSIZE);
+              opt.reporter_stack);
 
-    uint8_t rsp = (int)(100.0 *
-                        (SENSORTASK_STACKSIZE -
-                         uxTaskGetStackHighWaterMark(sensorTask->GetHandle())) /
-                        SENSORTASK_STACKSIZE);
-    uint8_t bsp =
+    config.sensor_stack_util =
         (int)(100.0 *
-              (BACKGROUNDTASK_STACKSIZE -
-               uxTaskGetStackHighWaterMark(backgroundTask->GetHandle())) /
-              BACKGROUNDTASK_STACKSIZE);
+              (opt.sensor_stack -
+               uxTaskGetStackHighWaterMark(sensorTask->GetHandle())) /
+              opt.sensor_stack);
 
     uint32_t freeHeap = ESP.getFreeHeap();
 
     if (opt.teleplot_viewer) {
-      teleplot.update_ms("reporterStack", millis(), ssp, percent_,
+      teleplot.update_ms("reporterStack", millis(), config.reporter_stack_util, percent_,
                          TELEPLOT_FLAG_NOPLOT);
-      teleplot.update_ms("sensorStack", millis(), rsp, percent_,
-                         TELEPLOT_FLAG_NOPLOT);
-      teleplot.update_ms("backgroundStack", millis(), bsp, percent_,
+      teleplot.update_ms("sensorStack", millis(), config.sensor_stack_util, percent_,
                          TELEPLOT_FLAG_NOPLOT);
       teleplot.update_ms("freeHeap", millis(), freeHeap, bytes_,
                          TELEPLOT_FLAG_NOPLOT);
     } else {
       JsonObject m = doc.createNestedObject("memory");
       m["t"] = millis();
-      m["reporterStack"] = rsp;
-      m["sensorStack"] = ssp;
-      m["backgroundStack"] = bsp;
+      m["reporterStack"] = config.reporter_stack_util;
+      m["sensorStack"] = config.sensor_stack_util;
       m["freeHeap"] = freeHeap;
     }
   }

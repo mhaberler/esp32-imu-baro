@@ -15,7 +15,31 @@
 #define USE_QUATERNIONS // else Euler angles for 3D teleplot
 
 #ifndef HOSTNAME
-#define HOSTNAME "esp32-imu-baro"
+#define HOSTNAME "sensorbox"
+#endif
+
+#ifndef LFS_PATH
+#define LFS_PATH "/"
+#endif
+
+#ifndef WEBSOCKET_PATH
+#define WEBSOCKET_PATH "/teleplot"
+#endif
+
+#ifndef CONSOLE_PATH
+#define CONSOLE_PATH "/cs"
+#endif
+
+#ifndef INDEX_HTML
+#define INDEX_HTML "/index.htm"
+#endif
+
+#ifndef WEB_USER
+#define WEB_USER ""
+#endif
+
+#ifndef WEB_PASS
+#define WEB_PASS ""
 #endif
 
 #ifndef REPORT_RATE
@@ -72,7 +96,13 @@
 #define UBLOX_WAIT 5000
 #define NAV_FREQUENCY 10 //  per second
 
-#define JSON_SIZE 4096
+#define ARDUINOJSON_ENABLE_COMMENTS 1
+#define ARDUINOJSON_ENABLE_NAN 0
+
+#define JSON_DOCUMENT_SIZE 4096
+#define SPIRAM_JSON_DOCUMENT_SIZE (JSON_DOCUMENT_SIZE*16)
+#define SPIRAM_TXBUFFER_SIZE 65536
+
 #define NUM_COMMANDS 50
 #define CMD_BUFSIZE 256
 
@@ -92,3 +122,17 @@
 #define BACKGROUNDTASK_PRIORITY 2
 #define BACKGROUNDTASK_STACKSIZE 8192
 
+#define UBLOX_STARTUP_DELAY 5000 // mS
+#define FLUSH_PERIOD 300 // mS
+#define STARTUP_FLUSH_INTERVAL 500 // mS
+
+// SD
+#define SD_WAIT_MS 2000
+#define MAX_OPEN_FILES 10
+#define SD_MOUNTPOINT "/sd"
+
+// LittleFS
+#define LFS_MOUNTPOINT "/littlefs"
+#define LFS_PARTITION "spiffs"
+
+#define NTP_POOL "europe.pool.ntp.org"

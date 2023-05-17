@@ -24,17 +24,17 @@ bool ublox_detect(const config_t &config, bool debug) {
     found = myGNSS.begin(Wire1, UBLOX_DEFAULT_ADDRESS);
     //  UBLOX_WAIT, false);
     if (found) {
-      Console.fmt("ublox detected on Wire1\n");
+      LOGD("ublox detected on Wire1");
       return myGNSS.isConnected();
     }
   }
   found = myGNSS.begin(Wire);
   if (found) {
-    Console.fmt("ublox detected on Wire\n");
+    LOGD("ublox detected on Wire");
     return myGNSS.isConnected();
     ;
   }
-  Console.fmt("no ublox detected on any Wire\n");
+  LOGD("no ublox detected on any Wire");
   return false;
 }
 

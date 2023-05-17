@@ -54,7 +54,7 @@ void initOtherSensors(options_t &options, config_t &config) {
     bmp.setPressureOversampling(BMP3_OVERSAMPLING_32X);
     bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_DISABLE);
     bmp.setOutputDataRate(BMP3_ODR_25_HZ);
-    Console.fmt("BMP3XX found\n");
+    LOGD("BMP3XX found");
   }
 
 #ifdef HAVE_WIRE1
