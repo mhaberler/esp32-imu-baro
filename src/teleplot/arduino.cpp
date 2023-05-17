@@ -27,18 +27,18 @@ void setup() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   if (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    Console.fmt("WiFi connection failed - using Serial\n");
+    LOGD("WiFi connection failed - using Serial\n");
     teleplot.begin(&Serial);
   } else {
     WiFi.printDiag(Serial);
     MDNS.begin("esp32");
     int n = browseService("teleplot", "udp");
     if (n > -1) {
-      Console.fmt("using teleplot destination to {}:{}\n",
+      LOGD("using teleplot destination to {}:{}",
                   MDNS.IP(n - 1).toString().c_str(), MDNS.port(n - 1));
       teleplot.begin(MDNS.IP(n - 1), MDNS.port(n - 1));
     } else {
-      Console.fmt("mDNS: no _teleplot._udp service found - using Serial\n");
+      LOGD("mDNS: no _teleplot._udp service found - using Serial\n");
       teleplot.begin(&Serial);
     }
   }
@@ -71,17 +71,17 @@ void setup() {
 void loop() { yield(); }
 
 int browseService(const char *service, const char *proto) {
-  Console.fmt("Browsing for service _{}._{}.local. ...\n", service, proto);
+  LOGD("Browsing for service _{}._{}.local. ...", service, proto);
   int n = MDNS.queryService(service, proto);
   if (n == 0) {
-    Console.fmt("no services found\n");
+    LOGD("no services found\n");
     return -1;
   } else {
 
-    Console.fmt("{} service(s) found\n", n);
+    LOGD("{} service(s) found", n);
     for (int i = 0; i < n; ++i) {
       // Print details for each service found
-      Console.fmt("{}: {} ({}:{})\n", i, MDNS.hostname(i).c_str(),
+      LOGD("{}: {} ({}:{})", i, MDNS.hostname(i).c_str(),
                   MDNS.IP(i).toString().c_str(), (int)MDNS.port(i));
     }
     return n;
