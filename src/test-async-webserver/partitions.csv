@@ -1,0 +1,33 @@
+# NOTE: when compiling under Arduino 2.0 or UECIDE IDE this partition 
+# table overrides the IDE's default settings !
+#
+# use SubType spiffs for SPIFFS and LittleFS, comment-out ffat
+# use SubType fat    for FFat               , comment-out spiffs
+#
+# configs for 4, 8, 16 MB flash on ESP32:
+#       Offset,     Size,      
+#       0x290000,   0x170000,  # ends at 0x400000  = 4MB
+#       0x290000,   0x570000,  # ends at 0x800000  = 8MB
+#       0x290000,   0xD70000,  # ends at 0x1000000 = 16MB
+
+
+# used with 4MB, 8MB, 16 MB chips
+#       Espressif ESP32 Partition Table
+#       Name,       Type,   SubType,    Offset,     Size,      Flags
+        nvs,        data,   nvs,        0x9000,     0x5000,
+        otadata,    data,   ota,        0xe000,     0x2000,
+        app0,       app,    ota_0,      0x10000,    0x140000,
+        app1,       app,    ota_1,      0x150000,   0x140000,
+
+# uncomment 1 of the 6 spiffs / fat lines to match FS and Flash size
+# use spiffs for LittleFS
+       spiffs,     data,   spiffs,     0x290000,   0x170000,
+#       spiffs,     data,   spiffs,     0x290000,   0x570000,
+#       spiffs,     data,   spiffs,     0x290000,   0xD70000,
+
+# use ffat for FFat
+#       ffat,       data,   fat,        0x290000,   0x170000,
+#       ffat,       data,   fat,        0x290000,   0x570000,
+#       ffat,       data,   fat,        0x290000,   0xD70000,
+
+

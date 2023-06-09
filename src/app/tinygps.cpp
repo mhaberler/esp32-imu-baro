@@ -1,3 +1,5 @@
+#ifdef SERIAL_GPS
+
 #include "defs.hpp"
 
 #include <TinyGPS++.h>
@@ -26,3 +28,5 @@ void serialGpsStats(void) {
   LOGD("failedChecksum: {}", serialGps.failedChecksum());
   LOGD("passedChecksum: {}", serialGps.passedChecksum());
 }
+
+#endif

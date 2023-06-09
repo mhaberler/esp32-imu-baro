@@ -1,5 +1,6 @@
 #pragma once
 
+extern bool psRAMavail;
 
 struct SpiRamAllocator {
   void *allocate(size_t size) {

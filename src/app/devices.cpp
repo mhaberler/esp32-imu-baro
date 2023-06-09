@@ -9,6 +9,6 @@ dev_entry_t imu_devices[] = {
     {DEV_BMI270_BMM150, "BMI270/BMM150"},
     {DEV_ICM20948, "ICM20948"},
     {DEV_BNO08x, "BNO08x"},
-    // {DEV_SH200Q, "SH200Q"},
+    {DEV_M5UNIFIED, "M5UNIFIED"},
     {DEV_ENDMARK, ""},
 };

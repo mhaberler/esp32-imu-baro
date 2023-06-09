@@ -43,15 +43,23 @@ void customReportingRateCode(const sensor_state_t &state,
 #endif
   if (options.teleplot_viewer) {
 #ifdef SMOOTHING_DEMO
-    const baro_report_t &bp = state.baro_values[options.which_baro];
-    if (!std::isnan(custom.smoothedBaroAlt)) {
-      custom.smoothedBaroAlt =
-          custom.alpha * bp.alt + (1 - custom.alpha) * custom.smoothedBaroAlt;
-      teleplot.update_ms("smoothedBaroAlt", millis(), custom.smoothedBaroAlt,
-                         meter, TELEPLOT_FLAG_NOPLOT);
-    } else {
-      custom.smoothedBaroAlt = bp.alt;
-    }
+    // switch (options.which_baro) {
+    // case /* constant-expression */:
+    //   /* code */
+    //   break;
+
+    // default:
+    //   break;
+    // }
+    // const baro_report_t &bp = state.baro_values[options.which_baro];
+    // if (!std::isnan(custom.smoothedBaroAlt)) {
+    //   custom.smoothedBaroAlt =
+    //       custom.alpha * bp.alt + (1 - custom.alpha) * custom.smoothedBaroAlt;
+    //   teleplot.update_ms("smoothedBaroAlt", millis(), custom.smoothedBaroAlt,
+    //                      meter, TELEPLOT_FLAG_NOPLOT);
+    // } else {
+    //   custom.smoothedBaroAlt = bp.alt;
+    // }
 
 #endif
   }

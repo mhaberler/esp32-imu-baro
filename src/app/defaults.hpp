@@ -19,7 +19,7 @@
 #endif
 
 #ifndef LFS_PATH
-#define LFS_PATH "/"
+#define LFS_PATH "/littlefs"
 #endif
 
 #ifndef WEBSOCKET_PATH
@@ -31,7 +31,7 @@
 #endif
 
 #ifndef INDEX_HTML
-#define INDEX_HTML "/index.htm"
+#define INDEX_HTML "/www/leaflet.html"
 #endif
 
 #ifndef WEB_USER
@@ -40,6 +40,10 @@
 
 #ifndef WEB_PASS
 #define WEB_PASS ""
+#endif
+
+#ifndef MIN_CLICKS_FOR_WIPE
+#define MIN_CLICKS_FOR_WIPE 3
 #endif
 
 #ifndef REPORT_RATE
@@ -51,6 +55,14 @@
 
 #ifndef STATS_RATE
 #define STATS_RATE 0.0
+#endif
+
+#ifndef BLE_RATE
+#define BLE_RATE 0.5
+#endif
+
+#ifndef SENSOR_RATE
+#define SENSOR_RATE 1.0
 #endif
 
 #ifndef BACKGROUND_RATE
@@ -96,43 +108,78 @@
 #define UBLOX_WAIT 5000
 #define NAV_FREQUENCY 10 //  per second
 
-#define ARDUINOJSON_ENABLE_COMMENTS 1
+// #define ARDUINOJSON_ENABLE_COMMENTS 1
 #define ARDUINOJSON_ENABLE_NAN 0
+#define ARDUINOJSON_USE_LONG_LONG 1
 
-#define JSON_DOCUMENT_SIZE 4096
-#define SPIRAM_JSON_DOCUMENT_SIZE (JSON_DOCUMENT_SIZE*16)
+#define JSON_DOCUMENT_SIZE 1024
+#define SPIRAM_JSON_DOCUMENT_SIZE (JSON_DOCUMENT_SIZE * 16)
 #define SPIRAM_TXBUFFER_SIZE 65536
 
 #define NUM_COMMANDS 50
 #define CMD_BUFSIZE 256
 
-
-#define APP_CPU 1   // has good timing
-#define PRO_CPU 0   // does all the housekeeping
+#define APP_CPU 1 // has good timing
+#define PRO_CPU 0 // does all the housekeeping
 
 #define SENSORTASK_CORE APP_CPU
-#define SENSORTASK_PRIORITY 3
+#define SENSORTASK_PRIORITY 2
 #define SENSORTASK_STACKSIZE 16384
 
 #define REPORTERTASK_CORE PRO_CPU
-#define REPORTERTASK_PRIORITY 2 // loop task has 1
+#define REPORTERTASK_PRIORITY 1 // loop task has 1
 #define REPORTERTASK_STACKSIZE 16384
 
 #define BACKGROUNDTASK_CORE PRO_CPU
-#define BACKGROUNDTASK_PRIORITY 2
+#define BACKGROUNDTASK_PRIORITY 1
 #define BACKGROUNDTASK_STACKSIZE 8192
 
-#define UBLOX_STARTUP_DELAY 5000 // mS
-#define FLUSH_PERIOD 300 // mS
+#ifndef BLETASK_STACKSIZE
+#define BLETASK_STACKSIZE 8192*2
+#endif
+
+#define BLETASK_PRIORITY 1
+#define BLETASK_CORE 0
+
+#define UBLOX_STARTUP_DELAY 5000   // mS
+#define FLUSH_PERIOD 300           // mS
 #define STARTUP_FLUSH_INTERVAL 500 // mS
 
-// SD
+// SD card
 #define SD_WAIT_MS 2000
 #define MAX_OPEN_FILES 10
 #define SD_MOUNTPOINT "/sd"
+#ifdef M5UNIFIED
+#define SD_CS_PIN 4
+#else
+#define SD_CS_PIN 34 //FIXME
+#endif
+#define SD_SPI_FREQ 40000
+#define SD_CARD_DETECT_PIN -1
 
+// logging
+#define LOG_COMMIT_FREQUENCY 0.2
+#define LOG_STYLE  FMT_NDJSON
+#define LOG_SUBDIR "/logs"
 // LittleFS
 #define LFS_MOUNTPOINT "/littlefs"
 #define LFS_PARTITION "spiffs"
 
 #define NTP_POOL "europe.pool.ntp.org"
+
+// PSRAM cache for webserver
+#ifndef MAX_PSRAM_FOR_CACHE_PCT
+#define MAX_PSRAM_FOR_CACHE_PCT 50
+#endif
+
+#ifndef FORMAT_IF_EMPTY
+#define FORMAT_IF_EMPTY false
+#endif
+
+// Access point
+#ifndef AP_SSID
+#define AP_SSID "sensorbox"
+#endif
+#ifndef AP_PASSWORD
+#define AP_PASSWORD "sensorbox123"
+#endif

@@ -1,6 +1,7 @@
 #include "defs.hpp"
+#include "probe.hpp"
 
-#ifdef UBLOX
+#ifdef UBLOX_GPS
 
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h>
 
@@ -15,31 +16,20 @@ void ublox_setup() {
   myGNSS.setAutoPVTcallbackPtr(&ublox_nav_pvt);
 }
 
-bool ublox_detect(const config_t &config, bool debug) {
-  bool found;
-  if (debug) {
-    myGNSS.enableDebugging(Console, false);
+bool ublox_detect(options_t &opt, config_t &config) {
+  if (opt.trace  & INFO_UBLOX) {
+    myGNSS.enableDebugging(Console,  (opt.trace  & INFO_UBLOX_ALL));
   }
-  if (config.wire1_avail) {
-    found = myGNSS.begin(Wire1, UBLOX_DEFAULT_ADDRESS);
-    //  UBLOX_WAIT, false);
-    if (found) {
-      LOGD("ublox detected on Wire1");
-      return myGNSS.isConnected();
-    }
+  const i2c_probe_t **dev = &config.dev[I2C_UBLOXI2C];
+  *dev = probe_dev("ubloxi2c", ublox_devs);
+  if (*dev) {
+    return true;
   }
-  found = myGNSS.begin(Wire);
-  if (found) {
-    LOGD("ublox detected on Wire");
-    return myGNSS.isConnected();
-    ;
-  }
-  LOGD("no ublox detected on any Wire");
   return false;
 }
 
 #else
 void ublox_setup() {}
 bool ublox_detect(const config_t &config, bool debug) { return false; }
-void ublox_loopcheck(void) {};
+void ublox_loopcheck(void){};
 #endif

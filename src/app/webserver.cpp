@@ -13,13 +13,13 @@
 #include <ESP8266WiFi.h>
 #include <ESPAsyncTCP.h>
 #endif
+#include "Cache.hpp"
 #include <CmdBuffer.hpp>
 #include <CmdCallback.hpp>
 #include <CmdParser.hpp>
 #include <ESPAsyncWebServer.h>
 #include <ESPmDNS.h>
 #include <LittleFS.h>
-#include "Cache.hpp"
 
 #ifdef WEBSERIAL
 #include <WebSerial.h>
@@ -35,6 +35,8 @@ AsyncWebSocket *webSocket, *consoleSocket;
 extern CmdCallback<NUM_COMMANDS> cmdCallback;
 extern CmdBuffer<CMD_BUFSIZE> buffer;
 extern CmdParser shell;
+
+extern SdFat sdfat;
 
 void webserialCmdComplete(CmdParser &cmdParser, bool found) {
   if (!found) {
@@ -59,7 +61,7 @@ void recvMsg(uint8_t *data, size_t len) {
 }
 
 void wsRecvMsg(const void *data, size_t len) {
-  bSerial.fmt("websocket got: '{:.*s}'", len, data);
+  serialConsole.fmt("websocket got: '{:.*s}'", len, data);
 }
 
 void notFound(AsyncWebServerRequest *request) {
@@ -175,35 +177,72 @@ void onConsoleSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client,
   }
 }
 
-void configureWebServer(const options_t &opt) {
+class CaptiveRequestHandler : public AsyncWebHandler {
+public:
+  CaptiveRequestHandler() {}
+  virtual ~CaptiveRequestHandler() {}
 
-  server = new AsyncWebServer(opt.webserver_port);
-  server->reset();
-  webSocket = new AsyncWebSocket(String(opt.websocket_path));
-  consoleSocket = new AsyncWebSocket(String(opt.consolesocket_path));
+  bool canHandle(AsyncWebServerRequest *request) { return true; }
 
-  webSocket->onEvent(onWebSocketEvent);
-  consoleSocket->onEvent(onConsoleSocketEvent);
-  server->addHandler(webSocket);
-  server->addHandler(consoleSocket);
+  void handleRequest(AsyncWebServerRequest *request) {
+    request->redirect(INDEX_HTML);
+  }
+};
 
-  server->serveStatic("/", LittleFS, opt.littlefs_static_path);
+// Queue deferred(20, sizeof(void *));
 
-  //    .setDefaultFile(opt.web_default_path);
+void handle_deferred(void) {
+  // AsyncWebServerRequest *request;
+  // if (deferred.Dequeue(&request, 0)) {
+  //   LOGD("deferred {}", request->pathArg(0).c_str());
+  // }
+}
 
-#ifdef SD_SUPPORT
-  server->on("^\\/sdfile(\\/.+)$", HTTP_GET,
-             [](AsyncWebServerRequest *request) {
-               LOGD("SD {}", request->pathArg(0).c_str());
-               request->send(SD, request->pathArg(0), "", false, NULL);
-             });
-  server->on("^\\/sddownload(\\/.+)$", HTTP_GET,
-             [](AsyncWebServerRequest *request) {
-               LOGD("SD {}", request->pathArg(0).c_str());
-               request->send(SD, request->pathArg(0), "", true, NULL);
-             });
-  server->serveStatic(SD_MOUNTPOINT, SD, SD_MOUNTPOINT);
+bool configureWebServer(const options_t &opt, config_t &config) {
+  if (true) {
+    // if (opt.captive_handler) {
+    server = new AsyncWebServer(opt.webserver_port);
+    server->reset();
+    webSocket = new AsyncWebSocket(String(opt.websocket_path));
+    consoleSocket = new AsyncWebSocket(String(opt.consolesocket_path));
+
+    webSocket->onEvent(onWebSocketEvent);
+    consoleSocket->onEvent(onConsoleSocketEvent);
+
+    server->addHandler(webSocket);
+    server->addHandler(consoleSocket);
+
+    // server->on("^(\\/maps\\/.+)$", HTTP_GET,
+    //            [](AsyncWebServerRequest *request) {
+    //              LOGD("maps {}", request->pathArg(0).c_str());
+    //              deferred.Enqueue(request);
+    //            });
+#ifdef SDFAT
+    if (config.sdfat_healthy) {
+      server->serveStatic("/", &sdfat, "/", "");
+    }
 #endif
+#ifdef LITTLEFS
+    if (config.lfs_healthy) {
+      server->serveStatic(opt.littlefs_static_path, LittleFS, "/");
+    }
+#endif
+    //    .setDefaultFile(opt.web_default_path);
+
+#if 0
+  // server->on("^\\/sdfile(\\/.+)$", HTTP_GET,
+  //            [](AsyncWebServerRequest *request) {
+  //              LOGD("SD {}", request->pathArg(0).c_str());
+  //              request->send(SD, request->pathArg(0), "", false, NULL);
+  //            });
+  // server->on("^\\/sddownload(\\/.+)$", HTTP_GET,
+  //            [](AsyncWebServerRequest *request) {
+  //              LOGD("SD {}", request->pathArg(0).c_str());
+  //              request->send(SD, request->pathArg(0), "", true, NULL);
+  //            });
+
+  // server->serveStatic(SD_MOUNTPOINT, SD, SD_MOUNTPOINT);
+
   server->on("^\\/file(\\/.+)$", HTTP_GET, [](AsyncWebServerRequest *request) {
     LOGD("LittleFS file {}", request->pathArg(0).c_str());
     request->send(LittleFS, request->pathArg(0), "", false, NULL);
@@ -214,7 +253,6 @@ void configureWebServer(const options_t &opt) {
                request->send(LittleFS, request->pathArg(0), "", true, NULL);
              });
 
-  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
 
   // Send a GET request to <IP>/get?message=<message>
   server->on("/get", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -239,14 +277,27 @@ void configureWebServer(const options_t &opt) {
     request->send(200, "text/plain", "Hello, POST: " + message);
   });
 
-  server->onNotFound(notFound);
-
-#ifdef WEBSERIAL
-  // WebSerial is accessible at "<IP Address>/webserial" in browser
-  WebSerial.begin(server);
-  WebSerial.msgCallback(recvMsg);
+  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
 #endif
 
-  server->begin();
+    server->onNotFound(notFound);
+
+    // #ifdef WEBSERIAL
+    //   // WebSerial is accessible at "<IP Address>/webserial" in browser
+    //   WebSerial.begin(server);
+    //   WebSerial.msgCallback(recvMsg);
+    // #endif
+
+    server->begin();
+  } else {
+    server = new AsyncWebServer(opt.webserver_port);
+
+    server->onNotFound(notFound);
+    server->serveStatic("/", &sdfat, "/", "");
+    server->addHandler(new CaptiveRequestHandler());
+    server->begin();
+  }
+
+  return true;
 }
 #endif // WEBSERVER

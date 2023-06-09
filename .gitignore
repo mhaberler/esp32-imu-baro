@@ -52,4 +52,4 @@ include/Version.h
 notes.txt
 *.pyc
 retired/
-
+logs/

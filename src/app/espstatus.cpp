@@ -9,8 +9,7 @@
 #include <cstdarg>
 
 #define STR(x)
-void task_details(bool bitch, const char *taskName,
-                  TaskHandle_t handle) {
+void task_details(bool bitch, const char *taskName, TaskHandle_t handle) {
   TaskHandle_t t = NULL;
   if (taskName) {
     t = xTaskGetHandle(taskName);
@@ -66,8 +65,14 @@ void task_report(const char *fn, const int line, ...) {
   // assorted "well-known" tasks
   task_details(false, "sensor");   // this project
   task_details(false, "reporter"); // this project
+  task_details(false, "blescan");  // this project
+  task_details(false, "mdns");  // this project
+
+  task_details(false, "nimble_host"); // NimBLE
+  task_details(false, "btController"); // NimBLE
 
   task_details(false, "loopTask");        // Arduino
+  task_details(false, "wifi");        // Arduino
   task_details(false, "arduino_events");  // Arduino libraries:
   task_details(false, "https_ota_task");  // Arduino
   task_details(false, "async_udp");       // Arduino

@@ -17,7 +17,7 @@ void fastled_setup(void) {
       leds, FASTLED_NUM_LEDS); // GRB ordering is typical
 #else
   FastLED.addLeds<FASTLED_TYPE, FASTLED_DATA_PIN>(
-      leds, RGB > (leds, FASTLED_NUM_LEDS););
+      leds, RGB > (leds, FASTLED_NUM_LEDS));
 #endif
 #endif
 }

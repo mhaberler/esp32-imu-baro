@@ -64,28 +64,45 @@
 [submodule "lib/ESPAsyncWebServer"]
 	path = lib/ESPAsyncWebServer
 	url = https://github.com/esphome/ESPAsyncWebServer.git
-[submodule "lib/AsyncTCP"]
-	path = lib/AsyncTCP
-	url = https://github.com/esphome/AsyncTCP.git
-[submodule "lib/spdlog"]
-	path = lib/spdlog
-	url = https://github.com/BalloonWare/spdlog.git
 [submodule "lib/SPIFFS"]
 	path = lib/SPIFFS
 	url = https://github.com/mhaberler/SPIFFS.git
 [submodule "lib/esp_ghota"]
 	path = lib/esp_ghota
 	url = https://github.com/mhaberler/esp_ghota.git
-[submodule "lib/fmt"]
-	path = lib/fmt
-	url = https://github.com/mhaberler/fmt.git
-[submodule "lib/fmtlib"]
-	path = lib/fmtlib
-	url = https://github.com/mhaberler/fmt.git
 [submodule "lib/ESP32-PsRamFS"]
 	path = lib/ESP32-PsRamFS
 	url = https://github.com/mhaberler/ESP32-PsRamFS.git
-
-[submodule "lib/NTPClient"]
-	path = lib/NTPClient
-	url = https://github.com/mhaberler/NTPClient.git
+[submodule "lib/M5CoreS3"]
+	path = lib/M5CoreS3
+	url = https://github.com/mhaberler/M5CoreS3.git
+[submodule "lib/M5Unified"]
+	path = lib/M5Unified
+	url = https://github.com/mhaberler/M5Unified.git
+[submodule "lib/M5GFX"]
+	path = lib/M5GFX
+	url = https://github.com/mhaberler/M5GFX.git
+[submodule "lib/SdFat"]
+	path = lib/SdFat
+	url = https://github.com/mhaberler/SdFat.git
+[submodule "lib/NimBLE-Arduino"]
+	path = lib/NimBLE-Arduino
+	url = https://github.com/mhaberler/NimBLE-Arduino.git
+[submodule "lib/fmtlib"]
+	path = lib/fmtlib
+	url = https://github.com/mhaberler/fmtlib.git
+[submodule "lib/spdlog"]
+	path = lib/spdlog
+	url = https://github.com/BalloonWare/spdlog.git
+[submodule "lib/AsyncTCP"]
+	path = lib/AsyncTCP
+	url = https://github.com/BalloonWare/AsyncTCP.git
+[submodule "lib/Adafruit_INA219"]
+	path = lib/Adafruit_INA219
+	url = https://github.com/mhaberler/Adafruit_INA219.git
+[submodule "lib/BMI270_Sensor"]
+	path = lib/BMI270_Sensor
+	url = https://github.com/mhaberler/BMI270_Sensor.git
+[submodule "lib/decoder"]
+	path = lib/decoder
+	url = https://github.com/mhaberler/decoder.git

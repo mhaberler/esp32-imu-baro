@@ -1,9 +1,6 @@
 #include "defs.hpp"
 #include <Crypto.h>
 #include <Preferences.h>
-#ifdef SD_SUPPORT
-#include <SD.h>
-#endif
 #define NAMESPACE "preferences"
 #define OPTKEY "options"
 #define OPTKEY_SHA "sha256"
@@ -51,19 +48,25 @@ static options_t defaults = {
     .report_rate = REPORT_RATE,
     .imu_rate = IMU_RATE,
     .stats_rate = STATS_RATE,
+    .ble_rate = BLE_RATE,
+    .sensor_rate = SENSOR_RATE,
     .selected_imu = DEV_NONE,
     .which_baro = USE_BARO_LPS22,
+    .rotation = 0,
     .flowsensor_pin = FLOWSENSOR_PIN,
     .alpha = ALPHA,
     .num_ssid = 0,
     {.hostname = HOSTNAME},
+    {.ap_ssid = AP_SSID},
+    {.ap_password = AP_PASSWORD},
     {.ntp_poolname = NTP_POOL},
     .tpPort = -1,
     .gps_uart = GPS_UART,
     .gps_speed = SERIAL_GPS_SPEED,
     .gps_rx_pin = SERIAL_GPS_RXPIN,
     .gps_tx_pin = SERIAL_GPS_TXPIN,
-    .debug = 0,
+    .log_level = 0,
+    .trace = 0,
     .run_webserver = true,
     .webserver_port = 80,
 
@@ -78,30 +81,77 @@ static options_t defaults = {
     .flush_ms = FLUSH_PERIOD,
     .reporter_stack = REPORTERTASK_STACKSIZE,
     .sensor_stack = SENSORTASK_STACKSIZE,
+    .ble_stack = BLETASK_STACKSIZE,
     .sensor_core = SENSORTASK_CORE,
     .reporter_core = REPORTERTASK_CORE,
+    .ble_core = BLETASK_CORE,
     .sensor_prio = SENSORTASK_PRIORITY,
     .reporter_prio = REPORTERTASK_PRIORITY,
+    .ble_prio = BLETASK_PRIORITY,
 
-#ifdef SD_SUPPORT
-#ifdef M5UNIFIED
     .sd_wait_ms = SD_WAIT_MS,
-    .sd_cs_pin = GPIO_NUM_4,
-    .sd_freq = 4000000,
+    .sd_cs_pin = SD_CS_PIN,
+    .sd_card_detect_pin = SD_CARD_DETECT_PIN,
+    .sd_freq_kHz = SD_SPI_FREQ,
     {.sd_mountpoint = SD_MOUNTPOINT},
     .sd_maxfiles = MAX_OPEN_FILES,
-    .sd_format_if_empty = false,
-#else
-    .sd_cs_pin = -1, // disables SD
-#endif
-#endif
+    .sd_format_if_empty = FORMAT_IF_EMPTY,
+
+    .spi_cfg = {{
+                    .miso = -1,
+                    .mosi = -1,
+                    .sck = 0,
+                    .kHz = 0,
+                },
+                {
+                    .miso = -1,
+                    .mosi = -1,
+                    .sck = 0,
+                    .kHz = 0,
+                }},
+    .i2c_cfg =
+        {
+            {.sda = -1, .scl = -1, .kHz = 0},
+            {.sda = -1, .scl = -1, .kHz = 0},
+        },
+    .log_format = LOG_STYLE,
+    .log_commit_freq = LOG_COMMIT_FREQUENCY,
+    .log_to_sd = true,
+
 #ifdef LITTLEFS_SUPPORT
     .lfs_format_if_empty = false,
     .lfs_maxfiles = MAX_OPEN_FILES,
     {.lfs_mountpoint = LFS_MOUNTPOINT},
     {.lfs_partition_label = LFS_PARTITION},
 #endif
+    .max_psram_for_cache_pct = MAX_PSRAM_FOR_CACHE_PCT,
+    .watchdog = -1.0, // disabled for now
+
 };
+
+uint32_t readBootCount(void) {
+  prefs.begin(NAMESPACE); // R/W
+  uint32_t counter = prefs.getUInt("counter", 0);
+  counter++;
+  prefs.putUInt("counter", counter);
+  prefs.end();
+  return counter;
+}
+
+void updatedWdtCount(void) {
+  prefs.begin(NAMESPACE); // R/W
+  uint32_t counter = prefs.getUInt("wdt_reboots", 0);
+  counter++;
+  prefs.putUInt("wdt_reboots", counter);
+  prefs.end();
+}
+
+uint32_t readWdtCount(void) {
+  prefs.begin(NAMESPACE); // R/W
+  uint32_t counter = prefs.getUInt("wdt_reboots", 0);
+  prefs.end();
+  return counter;
+}
 
 bool readPrefs(options_t &opt) {
 
@@ -160,7 +210,7 @@ bool savePrefs(options_t &opt) {
   size_t hlen = prefs.putBytes(OPTKEY_SHA, new_chksum, sizeof(new_chksum));
   prefs.end();
   LOGD("saving options: {} chksum: {}", T2OK(len == sizeof(opt)),
-       T2OK(hlen != SHA256_SIZE));
+       T2OK(hlen == SHA256_SIZE));
   return ((len == sizeof(options_t)) && (hlen == SHA256_SIZE));
 }
 
