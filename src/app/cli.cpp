@@ -10,9 +10,9 @@ CmdParser shell;
 extern options_t options;
 extern config_t config;
 
-// remain in sync with slow_sensor_type_t
+// remain in sync with i2c_dev_t
 const char *sensor_types[] = {"none",   "lps22",  "dps3xx",
-                              "bmp3xx", "ina219", "tmp117"};
+                              "bmp3xx","fxos", "fxas", "bno08x", "icm2049", "mout6050", "mpu9250", "bmi270", "bmm150","mou6886", "ubloxi2c", "tmp117", "ina219", "<max>"};
 
 static int num_services = -1;
 extern MDNSResponder MDNS;
@@ -444,7 +444,7 @@ void initShell(void) {
                           sensor_types[options.which_baro]);
             return;
         }
-        options.which_baro = (use_baro_t)atoi(cp->getCmdParam(1));
+        options.which_baro = (i2c_dev_t)atoi(cp->getCmdParam(1));
         Console.fmtln("using baro {} .. {}", (int)options.which_baro,
                       sensor_types[options.which_baro]);
     });
@@ -603,7 +603,7 @@ void initShell(void) {
         Console.fmtln("root: set to '{}'", options.littlefs_static_path);
     });
     cmdCallback.addCmd("PAR", [](CmdParser *cp) {
-        Console.fmtln("imu={} baro={} ned={} cal={} kf={:x}",
+        Console.fmtln("imu={} baro={} ned={} cal={} kf={}",
                       options.selected_imu_name,
                       sensor_types[options.which_baro], B2S(options.ned),
                       B2S(options.apply_cal), (int)options.which_kfmask);

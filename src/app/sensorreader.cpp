@@ -9,6 +9,7 @@ static sensor_state_t initTB = {
     .final_mag   = {.type = SENSOR_TYPE_MAGNETIC_FIELD}};
 
 TripleBuffer<sensor_state_t> triple_buffer(initTB);
+slowSensorReport_t selected_baro;
 
 TimerStats imuStats, customImuStats, slowSensorStats;
 Queue slowSensors(100, sizeof(slowSensorReport_t));
@@ -319,6 +320,10 @@ void handleSensors(void) {
                         slow.baro.alt = bmp->readAltitude(SEALEVELPRESSURE_HPA);
 
                         slowSensors.Enqueue(&slow);
+                        if (options.which_baro == I2C_BMP390) {
+                            memcpy(&selected_baro, &slow,
+                                   sizeof(selected_baro));
+                        }
                     }
                 }
                 break;
@@ -336,6 +341,9 @@ void handleSensors(void) {
                         hPa2meters(event.pressure, SEALEVELPRESSURE_HPA);
 
                     slowSensors.Enqueue(&slow);
+                    if (options.which_baro == I2C_LPS22) {
+                        memcpy(&selected_baro, &slow, sizeof(selected_baro));
+                    }
                 }
                 break;
 
@@ -352,6 +360,9 @@ void handleSensors(void) {
                         hPa2meters(event.pressure, SEALEVELPRESSURE_HPA);
 
                     slowSensors.Enqueue(&slow);
+                    if (options.which_baro == I2C_DPS3XX) {
+                        memcpy(&selected_baro, &slow, sizeof(selected_baro));
+                    }
                 }
                 break;
 

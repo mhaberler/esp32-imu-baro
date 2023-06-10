@@ -49,6 +49,7 @@
 #ifndef REPORT_RATE
 #define REPORT_RATE 0.0 // < 0: no updates
 #endif
+
 #ifndef IMU_RATE
 #define IMU_RATE 100.0
 #endif
@@ -183,3 +184,5 @@
 #ifndef AP_PASSWORD
 #define AP_PASSWORD "sensorbox123"
 #endif
+
+#define HILMAR_RATE 0.5   //Hz

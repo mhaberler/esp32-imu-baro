@@ -418,7 +418,7 @@ typedef struct {
     float sensor_rate;
     device_type_t selected_imu;
     const char *selected_imu_name;
-    use_baro_t which_baro;
+    i2c_dev_t which_baro;
     uint32_t which_kfmask;  // FIXME used?
 
     // M5 IMU setup params
@@ -512,6 +512,9 @@ typedef struct {
     // watchdog
     float watchdog;
 
+  // hilmar extensions
+  float hilmar_rate;
+
 } options_t;
 extern options_t options;
 
@@ -604,6 +607,8 @@ int browseService(const char *service, const char *proto);
 void printLocalTime(sensor_state_t *state);
 void flushAll(void);
 void setStatsRate(const float hz);
+
+inline void flagSetter(volatile bool *flag) { *flag = true; }
 
 void setRate(Ticker &ticker, const float Hz, volatile bool *flag);
 
