@@ -68,7 +68,7 @@ class ScanCallbacks : public NimBLEScanCallbacks {
             }
         }
         if (decoder.decodeBLEJson(BLEdata)) {
-            BLEdata.remove("manufacturerdata");
+            // BLEdata.remove("manufacturerdata");
             BLEdata.remove("servicedata");
             BLEdata.remove("servicedatauuid");
             BLEdata.remove("type");
