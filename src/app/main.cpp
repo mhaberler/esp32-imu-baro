@@ -498,7 +498,6 @@ void setup(void) {
         flushBuffers();
         selectAHRS(options, config);
     }
-    heap_report(__FILE__, __LINE__);
     flushBuffers();
 #ifdef UBLOX_GPS
     ubloxStartupTicker.once_ms(UBLOX_STARTUP_DELAY, []() {
@@ -514,7 +513,6 @@ void setup(void) {
     customInitCode(config, options);
     flushBuffers();
     initShell();
-    heap_report(__FILE__, __LINE__);
 
     flushBuffers();
 
@@ -527,8 +525,6 @@ void setup(void) {
 #endif
 
 #endif
-    heap_report(__FILE__, __LINE__);
-
     reporterTask = new CyclicTask(
         "reporter", options.reporter_stack, options.reporter_prio,
         []() { reporter(config, options); }, 1000.0 / REPORT_RATE);
@@ -547,7 +543,6 @@ void setup(void) {
         LOGE("failed to start sensor task!");
         heap_report(NULL, 0);
     }
-    heap_report(__FILE__, __LINE__);
 
     setStatsRate(0.2);
     setSensorRate(options.sensor_rate);

@@ -118,7 +118,7 @@ void BLEscanOnce(options_t &options, config_t &config) {
         // Start scan with: duration = 1 seconds(forever), no scan end callback,
         // not a continuation of a previous scan.
 
-        pBLEScan->start(1, false);
+        pBLEScan->start(0, false);
 #ifdef TRACE1_PIN
         digitalWrite(TRACE1_PIN, LOW);
 #endif

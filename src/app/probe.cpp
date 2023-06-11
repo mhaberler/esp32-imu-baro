@@ -216,7 +216,7 @@ static const i2c_probe_t _ina219_devs[] = {
     {EXT_I2C, INA219_CALC_ADDRESS(0, 1), ina219_probe, NULL},
     {EXT_I2C, INA219_CALC_ADDRESS(1, 0), ina219_probe, NULL},
     {EXT_I2C, INA219_CALC_ADDRESS(1, 1), ina219_probe, NULL},
-#ifndef CORES3  // collides with ES7210 at Wire0 0x40
+#ifndef PLATFORM_M5CORES3  // collides with ES7210 at Wire0 0x40
 
     {INT_I2C, INA219_CALC_ADDRESS(0, 0), ina219_probe, NULL},
     {INT_I2C, INA219_CALC_ADDRESS(0, 1), ina219_probe, NULL},

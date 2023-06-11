@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include "platform_defaults.h"
 #include "defaults.hpp"
 
 #ifndef CONFIG_SPIRAM_SUPPORT
@@ -294,7 +295,7 @@ typedef enum {
 
 typedef struct {
     slow_sensor_type_t typus;
-    int64_t timestamp;  
+    int64_t timestamp;
     union {
         baro_report_t baro;
         ina219_report_t ina219;
@@ -320,17 +321,15 @@ typedef struct {
     bool serialgps_avail;
     bool flowsensor_avail;
 
-    // bool wire_avail, wire1_avail;
+    IPAddress currentTpHost;
+    uint16_t currentTpPort;
 
     bool m5_imu_avail;
-
-    IPAddress tpHost;
-    int tpPort;
     struct tm timeinfo;      // from NTP query time
     int64_t timeSinceEpoch;  // epoch milliseconds at NTP query time
     unsigned long
-        timeinfo_millis;  // mS elapsed since boot when NTP time was measured
-    int64_t millis_offset; // add this to millis() to get a abs timestamp
+        timeinfo_millis;    // mS elapsed since boot when NTP time was measured
+    int64_t millis_offset;  // add this to millis() to get a abs timestamp
 
     Adafruit_Sensor_Calibration_EEPROM cal;
     bool cal_loaded;
@@ -390,7 +389,7 @@ typedef struct {
 
 typedef struct {
     int16_t miso, mosi, sck;
-    uint16_t kHz;
+    // uint16_t kHz;
 } spi_cfg_t;
 
 typedef struct {
@@ -444,7 +443,6 @@ typedef struct {
     char tpHost[SSID_SIZE];
 
     // serial GPS
-    int32_t gps_uart;
     int32_t gps_speed;
     int32_t gps_rx_pin, gps_tx_pin;
 
@@ -512,8 +510,8 @@ typedef struct {
     // watchdog
     float watchdog;
 
-  // hilmar extensions
-  float hilmar_rate;
+    // hilmar extensions
+    float hilmar_rate;
 
 } options_t;
 extern options_t options;
@@ -608,7 +606,9 @@ void printLocalTime(sensor_state_t *state);
 void flushAll(void);
 void setStatsRate(const float hz);
 
-inline void flagSetter(volatile bool *flag) { *flag = true; }
+inline void flagSetter(volatile bool *flag) {
+    *flag = true;
+}
 
 void setRate(Ticker &ticker, const float Hz, volatile bool *flag);
 

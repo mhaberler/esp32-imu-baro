@@ -85,9 +85,10 @@
 #define GPS_MAXAGE 2000 // millis
 #endif
 
-#ifndef GPS_UART
-#define GPS_UART 2
+#ifndef SERIAL_GPS_UART
+#define SERIAL_GPS_UART -1
 #endif
+
 #ifndef SERIAL_GPS_SPEED
 #define SERIAL_GPS_SPEED 9600
 #endif

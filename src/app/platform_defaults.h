@@ -1,12 +1,6 @@
 #pragma once
 
-#define I2CPORT(num, sda, scl, freq) \
-    #define I2C##num##_PRESENT 1\
-    #define I2C##num##_SDA sda\
-    #define I2C##num##_SCL scl\
-    #define I2C##num##_KHZ freq
-
-    
+   
 #if defined(PLATFORM_M5CORE2)
 
 #define I2C0_SDA 21
@@ -50,6 +44,14 @@
 
 #define FLOWSENSOR_PIN 36
 
+#define SPI0_MISO -1
+#define SPI0_MOSI -1
+#define SPI0_SCK -1
+
+#define SPI1_MISO -1
+#define SPI1_MOSI -1
+#define SPI1_SCK -1
+
 #endif
 
 #if defined(PLATFORM_M5STAMPS3)
@@ -87,7 +89,7 @@
 #define SD_CARD_DETECT_PIN 26 
 #define SD_SPI_FREQ     25000
 
-#define SERIAL_GPS_UART  2
+// #define SERIAL_GPS_UART  2
 #define SERIAL_GPS_RXPIN 17
 #define SERIAL_GPS_TXPIN 18
 #define SERIAL_GPS_SPEED 9600

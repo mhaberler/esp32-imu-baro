@@ -10,9 +10,9 @@ CmdParser shell;
 extern options_t options;
 extern config_t config;
 
-// remain in sync with i2c_dev_t
-const char *sensor_types[] = {"none",   "lps22",  "dps3xx",
-                              "bmp3xx","fxos", "fxas", "bno08x", "icm2049", "mout6050", "mpu9250", "bmi270", "bmm150","mou6886", "ubloxi2c", "tmp117", "ina219", "<max>"};
+// remain in sync with slow_sensor_type_t
+const char *sensor_types[] = {"none",   "lps22",  "dps3xx", "bmp3xx",
+                              "ina219", "tmp117", "geiger", "<max>"};
 
 static int num_services = -1;
 extern MDNSResponder MDNS;
@@ -60,7 +60,8 @@ void help(options_t &options, config_t &config, CmdParser *cp) {
         "  pass <pass1> [pass2] ...# set corresponding WiFi passwords");
 
     Console.fmtln(
-        "  tpdest <IP address> <port number> # teleplot UDP "
+        "  tpdest <IP address> <port number> # teleplot UDP (use \"tpdest '' "
+        "0\" to clear)"
         "destination: {}:{}",
         options.tpHost, options.tpPort);
     Console.fmtln(
@@ -326,7 +327,15 @@ void initShell(void) {
             Console.fmtln("format:  tpdest <IP address> <port number>");
             return;
         }
-        strcpy(options.tpHost, cp->getCmdParam(1));
+        const char *h = cp->getCmdParam(1);
+        if (strcmp(h, "''") == 0) {
+            memset(options.tpHost, 0, sizeof(options.tpHost));
+            options.tpPort = 0;
+            Console.fmtln("teleplot UDP destination cleared");
+            return;
+        } else {
+            strcpy(options.tpHost, h);
+        }
         options.tpPort = atoi(cp->getCmdParam(2));
         Console.fmtln("teleplot UDP destination set to: {}:{}", options.tpHost,
                       options.tpPort);
@@ -607,10 +616,13 @@ void initShell(void) {
                       options.selected_imu_name,
                       sensor_types[options.which_baro], B2S(options.ned),
                       B2S(options.apply_cal), (int)options.which_kfmask);
-        Console.fmtln("irate={:.1f} rrate={:.1f} srate={:.1f}  filter={}", options.imu_rate,
-                      options.report_rate, options.sensor_rate, B2S(options.run_filter));
-        Console.fmtln("mDNS tpdest={}:{}", config.tpHost.toString().c_str(),
-                      config.tpPort);
+        Console.fmtln("irate={:.1f} rrate={:.1f} srate={:.1f} blerate={:.1f} filter={}",
+                      options.imu_rate, options.report_rate,
+                      options.sensor_rate, options.ble_rate, (options.run_filter));
+        Console.fmtln("current tpdest={}:{} ({})",
+                      config.currentTpHost.toString().c_str(),
+                      config.currentTpPort,
+                      strlen(options.tpHost) ? "manually set" : "via mDNS");
         Console.fmtln("IP={} GW={} netmask={} rssi={}",
                       WiFi.localIP().toString().c_str(),
                       WiFi.gatewayIP().toString().c_str(),
@@ -622,7 +634,7 @@ void initShell(void) {
         Console.fmtln("BLE rate={:.1f} ads={}", options.ble_rate,
                       config.ble_ads);
     });
-    cmdCallback.addCmd("NDJSON", [](CmdParser *cp) {
+    cmdCallback.addCmd("ND", [](CmdParser *cp) {
         options.ndjson = !options.ndjson;
 
         Console.fmtln("ndjson: {}", B2S(options.ndjson));
@@ -658,7 +670,6 @@ void initShell(void) {
             options.gps_rx_pin = atoi(cp->getCmdParam(1));
             options.gps_tx_pin = atoi(cp->getCmdParam(2));
             options.gps_speed  = atoi(cp->getCmdParam(3));
-            // options.gps_uart = atoi(cp->getCmdParam(4));
             Console.fmtln("serial GPS - params set to: rx={} tx={} speed={}",
                           options.gps_rx_pin, options.gps_tx_pin,
                           options.gps_speed);
