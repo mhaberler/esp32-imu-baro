@@ -310,9 +310,9 @@ bool sd_openlog(const options_t &opt, config_t &config) {
                fmt::format("{}/log_{:06}.njs", LOG_SUBDIR, config.boot_count)
                    .c_str());
 
-        config.log_fd = sdfat.open(config.log_path, O_WRONLY);
+        config.log_fd = sdfat.open(config.log_path, O_WRONLY | O_CREAT);
         LOGD("openend SD: '{}' for logging/w: {}", config.log_path,
-             T2OK(config.log_fd));
+             T2OK(config.log_fd.isOpen()));
 
         return config.log_fd.isOpen();
     }
