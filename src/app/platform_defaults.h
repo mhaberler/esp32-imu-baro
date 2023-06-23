@@ -52,6 +52,10 @@
 #define SPI1_MOSI -1
 #define SPI1_SCK -1
 
+#define SD_CS_PIN          4
+#define SD_CARD_DETECT_PIN -1
+#define SD_SPI_FREQ        25000
+
 #endif
 
 #if defined(PLATFORM_M5STAMPS3)
