@@ -151,13 +151,13 @@
 #define SD_WAIT_MS 2000
 #define MAX_OPEN_FILES 10
 #define SD_MOUNTPOINT "/sd"
-#ifdef M5UNIFIED
-#define SD_CS_PIN 4
-#else
-#define SD_CS_PIN 34 //FIXME
-#endif
-#define SD_SPI_FREQ 40000
-#define SD_CARD_DETECT_PIN -1
+// #ifdef M5UNIFIED
+// #define SD_CS_PIN 4
+// #else
+// #define SD_CS_PIN 34 //FIXME
+// #endif
+// #define SD_SPI_FREQ 40000
+// #define SD_CARD_DETECT_PIN -1
 
 // logging
 #define LOG_COMMIT_FREQUENCY 0.2

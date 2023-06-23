@@ -367,6 +367,11 @@ bool init_calibration(options_t &opt, config_t &config) {
 }
 
 void setup(void) {
+
+#ifdef STARTUP_DELAY
+    delay(STARTUP_DELAY); // let USB settle
+#endif
+
 #ifdef M5UNIFIED
     auto cfg            = M5.config();
     cfg.serial_baudrate = BAUD;
