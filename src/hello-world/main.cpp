@@ -5,20 +5,24 @@
 #include <Arduino.h>
 #endif
 
+#include "Esp.h"
+
 void setup() {
 #ifdef M5UNIFIED
-  auto cfg = M5.config();
-  M5.begin(cfg);
+    auto cfg = M5.config();
+    M5.begin(cfg);
 #else
-  Serial.begin(115200);
+    Serial.begin(115200);
 #endif
-  while (!Serial) {
-    yield();
-  }
-  Serial.printf ("Hello, World!\n");
+    while (!Serial) {
+        yield();
+    }
+    Serial.printf("Hello, World!\n");
 }
 
 void loop() {
-  delay (1000);
-  Serial.printf("Hello, World loop!\n");
- }
+    delay(1000);
+    Serial.printf("Hello, World loop!\n");
+    Serial.printf("Total PSRAM=%u\n", ESP.getPsramSize());
+    Serial.printf("Free PSRAM=%u\n", ESP.getFreePsram());
+}
