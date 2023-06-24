@@ -1,6 +1,8 @@
 
 #ifdef M5UNIFIED
 #include <M5Unified.h>
+#else
+#include <Arduino.h>
 #endif
 
 void setup() {
@@ -13,6 +15,10 @@ void setup() {
   while (!Serial) {
     yield();
   }
+  Serial.printf ("Hello, World!\n");
 }
 
-void loop() { yield(); }
+void loop() {
+  delay (1000);
+  Serial.printf("Hello, World loop!\n");
+ }
