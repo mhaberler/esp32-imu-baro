@@ -113,6 +113,41 @@
 
 #endif
 
+// ESP32-S3-DEV-KIT-N8R8
+// https://www.waveshare.com/wiki/ESP32-S3-DEV-KIT-N8R8
+// mah breakout board (8MB psram)
+
+// see https://esp32.com/viewtopic.php?f=13&p=111878#p111878
+// cant use 35,36,37 if OSPI PSRAM is used!!
+#if defined(PLATFORM_S3_TEST_N8R8)
+
+#define I2C0_SDA 2
+#define I2C0_SCL 1
+#define I2C0_KHZ 400
+
+#define I2C1_SDA 41
+#define I2C1_SCL 40
+#define I2C1_KHZ 400
+
+#define SPI0_MISO -1
+#define SPI0_MOSI -1
+#define SPI0_SCK  -1
+
+#define SPI1_MISO -1
+#define SPI1_MOSI -1
+#define SPI1_SCK  -1
+
+#define SD_CS_PIN          34
+#define SD_CARD_DETECT_PIN 26
+#define SD_SPI_FREQ        25000
+
+// #define SERIAL_GPS_UART  2
+#define SERIAL_GPS_RXPIN 17
+#define SERIAL_GPS_TXPIN 18
+#define SERIAL_GPS_SPEED 9600
+
+#endif
+
 // ESP32-S3-DevKitM-1-N8
 // mah breakout board (no psram, conrad.at)
 #if defined(PLATFORM_S3DEVKIT_M1N8)
