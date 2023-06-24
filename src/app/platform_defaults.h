@@ -26,6 +26,14 @@
 #define I2C1_SCL 33
 #define I2C1_KHZ 100
 
+#define SPI0_MISO -1
+#define SPI0_MOSI -1
+#define SPI0_SCK  -1
+
+#define SPI1_MISO          -1
+#define SPI1_MOSI          -1
+#define SPI1_SCK           -1
+
 #define SD_CS_PIN 4
 #define SD_CARD_DETECT_PIN -1 
 #define SD_SPI_FREQ     25000
