@@ -72,6 +72,10 @@ void help(options_t &options, config_t &config, CmdParser *cp) {
     Console.fmtln("  i2c  # run i2c scan");
     Console.fmtln("  fs [pin] # report or set the flowsensor pin: {}",
                   options.flowsensor_pin);
+    Console.fmtln(
+        "  qs [pinA pinB] # report or set the quadrature sensor pins: {} "
+        "{}",
+        options.qs_pinA, options.qs_pinB);
     Console.fmtln("  dev <device> # set IMU device: {} ({})",
                   (int)options.selected_imu, options.selected_imu_name);
     Console.fmtln(
@@ -616,9 +620,10 @@ void initShell(void) {
                       options.selected_imu_name,
                       sensor_types[options.which_baro], B2S(options.ned),
                       B2S(options.apply_cal), (int)options.which_kfmask);
-        Console.fmtln("irate={:.1f} rrate={:.1f} srate={:.1f} blerate={:.1f} filter={}",
-                      options.imu_rate, options.report_rate,
-                      options.sensor_rate, options.ble_rate, (options.run_filter));
+        Console.fmtln(
+            "irate={:.1f} rrate={:.1f} srate={:.1f} blerate={:.1f} filter={}",
+            options.imu_rate, options.report_rate, options.sensor_rate,
+            options.ble_rate, (options.run_filter));
         Console.fmtln("current tpdest={}:{} ({})",
                       config.currentTpHost.toString().c_str(),
                       config.currentTpPort,
@@ -684,6 +689,17 @@ void initShell(void) {
         }
         options.flowsensor_pin = atoi(cp->getCmdParam(1));
         Console.fmtln("flowsensor pin set to:: {}", options.flowsensor_pin);
+    });
+    cmdCallback.addCmd("QS", [](CmdParser *cp) {
+        if (cp->getParamCount() != 3) {
+            Console.fmtln("current quadrature sensor pins: {} {}",
+                          options.qs_pinA, options.qs_pinB);
+            return;
+        }
+        options.qs_pinA = atoi(cp->getCmdParam(1));
+        options.qs_pinB = atoi(cp->getCmdParam(2));
+        Console.fmtln("quadrature sensor pins set to: {} {}", options.qs_pinA,
+                      options.qs_pinB);
     });
     customCommands(config, options);
     buffer.setEcho(true);
