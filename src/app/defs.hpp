@@ -432,7 +432,9 @@ typedef struct {
     SpiRamJsonDocument *root, *client_result;
 
     uint32_t ble_ads;
-    // NimBLEAddress nimble_adr[NUM_BLESENSORS];
+    uint32_t ble_ads_accepted;
+
+    NimBLEAddress nimble_adr[NUM_BLESENSORS];
 
 } config_t;  // FIXME should be status_t
 

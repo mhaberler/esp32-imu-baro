@@ -26,17 +26,34 @@ class ScanCallbacks : public NimBLEScanCallbacks {
         return spr;
     }
 
+    const BLEsensor_t *findSensor(NimBLEAddress const &mac_adress) {
+        for (auto i = 0; i < NUM_BLESENSORS; i++) {
+            if (mac_adress == _config->nimble_adr[i]) {
+                // Console.fmtln("findSensor: found  {}", mac_adress.toString());
+                return &_opt->blesensors[i];
+            }
+        }
+        return NULL;
+    }
+
     void onResult(BLEAdvertisedDevice *advertisedDevice) {
 #ifdef TRACE2_PIN
         digitalWrite(TRACE2_PIN, HIGH);
 #endif
         _config->ble_ads += 1;
+
+        JsonObject BLEdata = doc.to<JsonObject>();
+
+        const BLEsensor_t *bp = findSensor(advertisedDevice->getAddress());
+        if (bp == NULL) {
+            return;
+        }
+        String mac_adress = advertisedDevice->getAddress().toString().c_str();
+        mac_adress.toUpperCase();
         if (_opt->trace & INFO_BLE_ADS) {
             LOGD("BLE: {}", advertisedDevice->toString().c_str());
         }
-        JsonObject BLEdata = doc.to<JsonObject>();
-        String mac_adress  = advertisedDevice->getAddress().toString().c_str();
-        mac_adress.toUpperCase();
+        _config->ble_ads_accepted += 1;
         BLEdata["id"] = (char *)mac_adress.c_str();
 
         if (advertisedDevice->haveName())
@@ -83,7 +100,6 @@ class ScanCallbacks : public NimBLEScanCallbacks {
             }
 
             // test for envelope mac address and record temp if so
-            
         }
 #ifdef TRACE2_PIN
         digitalWrite(TRACE2_PIN, LOW);
@@ -97,12 +113,28 @@ void setupBLE(options_t &opt, config_t &config) {
     NimBLEDevice::setScanFilterMode(CONFIG_BTDM_SCAN_DUPL_TYPE_DATA);
     NimBLEDevice::setScanDuplicateCacheSize(200);
     NimBLEDevice::init("");
-    //   NimBLEDevice::setPower(ESP_PWR_LVL_P9);
+    // NimBLEDevice::setPower(ESP_PWR_LVL_P9);
 
-    pBLEScan = NimBLEDevice::getScan();  // create new scan
+    for (auto i = 0; i < NUM_BLESENSORS; i++) {
+        BLEsensor_t *bp = &opt.blesensors[i];
+        std::string mac;
+        switch (bp->type) {
+            case SENSOR_NONE:
+                continue;
+            default:
+                config.nimble_adr[i] = NimBLEAddress(std::string(bp->blemac));
+                break;
+        }
+    }
+    // create new scan
+    pBLEScan = NimBLEDevice::getScan();
+
+    // no whitelist filtering  - done in onResult()
+    pBLEScan->setFilterPolicy(BLE_HCI_SCAN_FILT_NO_WL);
+
     // Set the callback for when devices are discovered, no duplicates.
     pBLEScan->setScanCallbacks(new ScanCallbacks(&opt, &config), false);
-    pBLEScan->setActiveScan(true);  // Set active scanning, this will get more
+    pBLEScan->setActiveScan(false);  // Set active scanning, this will get more
                                     // data from the advertiser.
     pBLEScan->setInterval(
         97);  // How often the scan occurs / switches channels; in milliseconds,

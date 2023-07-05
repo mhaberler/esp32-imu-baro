@@ -329,6 +329,11 @@ void initShell(void) {
             Console.fmtln("ble sensors configured: {}", n);
             return;
         }
+        if (strcasecmp(cp->getCmdParam(1),"clear") == 0) {
+            memset(options.blesensors, 0, sizeof(options.blesensors));
+            Console.fmtln("bs clear: wiped ble sensors table");
+            return;
+        }
         if (cp->getParamCount() != 6) {
             Console.fmtln("usage: bs [<index> name macaddress type usage]");
             return;
