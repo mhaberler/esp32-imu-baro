@@ -53,9 +53,22 @@ static options_t defaults = {
     .selected_imu    = DEV_NONE,
     .which_baro      = I2C_LPS22,
     .rotation        = 0,
-    .flowsensor_pin  = FLOWSENSOR_PIN,
-    .alpha           = ALPHA,
-    .num_ssid        = 0,
+
+    // single-pin FlowSensor
+    .flowsensor_pin = FLOWSENSOR_PIN,
+
+    // dual-pin QuadratureDecoder
+
+    .qs_pinA = QUADRATURE_DECODER_PINA,
+    .qs_pinB         = QUADRATURE_DECODER_PINB,
+    .qs_step         = QUADRATURE_STEP,
+    .qs_tick         = QUADRATURE_SAMPLE_TICK,
+    .qs_changeDeltaT = QUADRATURE_CHANGE_DELTAT,
+    .qs_inputMode    = QUADRATURE_INPUT_MODE,
+    .qs_edge         = QUADRATURE_EDGE,
+
+    .alpha    = ALPHA,
+    .num_ssid = 0,
     {.hostname = HOSTNAME},
     {.ap_ssid = AP_SSID},
     {.ap_password = AP_PASSWORD},

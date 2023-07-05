@@ -423,7 +423,17 @@ typedef struct {
     // M5 IMU setup params
     uint8_t rotation;  // 0,1,2
 
-    int flowsensor_pin;
+    // single-pin FlowSensor
+    int16_t flowsensor_pin;
+
+    // dual-pin QuadratureDecoder 
+    int16_t qs_pinA;
+    int16_t qs_pinB;
+    uint8_t qs_step;
+    uint32_t qs_tick;
+    uint32_t qs_changeDeltaT;
+    uint8_t qs_inputMode;
+    uint8_t qs_edge;
 
     // smoothing
     float alpha;
