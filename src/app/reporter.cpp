@@ -201,6 +201,39 @@ void reporter(config_t &config, options_t &opt) {
         }
     }
 
+    if (config.quad_sensor_avail) {
+        qsensor_report_t report;
+        quad_sensor.getReport(report);
+        static uint32_t track_flowcount = 0xFFFFFFFF;
+        static bool track_flowing       = false;
+        if ((track_flowcount != report.count) ||
+            (track_flowing != report.changed)) {
+            if (options.teleplot_viewer) {
+                if (track_flowing != report.changed) {
+                    // insert fake report for nice edge
+                    teleplot.update_ms("flowDetected", report.last_change/1000 - 1,
+                                       (int)(!report.changed), bool_,
+                                       TELEPLOT_FLAG_NOPLOT);
+                }
+                teleplot.update_ms("flowDetected", report.last_change/1000,
+                                   (int)report.changed, bool_,
+                                   TELEPLOT_FLAG_NOPLOT);
+                teleplot.update_ms("flowCounter", report.last_change/1000,
+                                   report.count, counter_,
+                                   TELEPLOT_FLAG_NOPLOT);
+            }
+            if (options.ndjson) {
+                JsonObject j = doc.createNestedObject("flow");
+                j["t"]       = report.last_change/1000;
+                j["count"]   = report.count;
+                j["changed"] = report.changed;
+                emitJson(config, options, doc);
+            }
+            track_flowcount = report.count;
+            track_flowing   = report.changed;
+        }
+    }
+
     if (options.report_baro) {
         slowSensorReport_t bp;
         while (slowSensors.Dequeue(&bp, 0)) {

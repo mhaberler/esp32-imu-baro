@@ -114,9 +114,9 @@ extern TinyGPSPlus serialGps;
 #include "TreeWalker.hpp"
 #endif
 
-#ifdef DRV_FLOWSENSOR
 #include <FlowSensor.hpp>
-#endif
+#include <QuadratureDecoder.hpp>
+
 
 #ifdef LITTLEFS
 #include <LittleFS.h>
@@ -320,7 +320,8 @@ typedef struct {
     bool i2c_avail[NUM_I2C];
     bool serialgps_avail;
     bool flowsensor_avail;
-
+    bool quad_sensor_avail;
+    
     IPAddress currentTpHost;
     uint16_t currentTpPort;
 
@@ -668,3 +669,4 @@ extern Adafruit_BNO08x *bno08x
 extern MPU9250_DMP *mpu9250_dmp;
 extern Adafruit_MPU6886 *mpu6886;
 extern FlowSensor flow_sensor;
+extern QuadratureDecoder quad_sensor;
