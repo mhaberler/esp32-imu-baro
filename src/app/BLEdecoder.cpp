@@ -5,6 +5,9 @@
 #include "NimBLEDevice.h"
 #include "decoder.h"
 
+#include "custom.hpp"
+extern struct custom_t custom;
+
 NimBLEScan *pBLEScan;
 
 TheengsDecoder decoder;
@@ -29,7 +32,8 @@ class ScanCallbacks : public NimBLEScanCallbacks {
     const BLEsensor_t *findSensor(NimBLEAddress const &mac_adress) {
         for (auto i = 0; i < NUM_BLESENSORS; i++) {
             if (mac_adress == _config->nimble_adr[i]) {
-                // Console.fmtln("findSensor: found  {}", mac_adress.toString());
+                // Console.fmtln("findSensor: found  {}",
+                // mac_adress.toString());
                 return &_opt->blesensors[i];
             }
         }
@@ -94,12 +98,31 @@ class ScanCallbacks : public NimBLEScanCallbacks {
             BLEdata.remove("cont");
             BLEdata.remove("track");
             if (_opt->trace & INFO_BLE_SENSORS) {
-                Serial.print("TheengsDecoder found device: ");
+                Serial.printf("sensor %s: ", bp->name);
                 serializeJson(BLEdata, Serial);
                 Serial.println("");
             }
-
-            // test for envelope mac address and record temp if so
+            // test for important sensors which should go into the global or custom state
+            switch (bp->usage) {
+                case BT_ENVELOPE:
+                    if (bp->type == SENSOR_RUUVI) {
+                        custom.env_temp_C  = BLEdata["tempc"];
+                        custom.env_hum_pct = BLEdata["hum"];
+                        custom.env_millis  = millis();
+                    }
+                    break;
+                case BT_OAT:
+                    if (bp->type == SENSOR_RUUVI) {
+                        custom.oat_temp_C  = BLEdata["tempc"];
+                        custom.oat_hum_pct = BLEdata["hum"];
+                        custom.oat_millis  = millis();
+                    }
+                    break;
+                case BT_FLOW1:
+                    break;
+                default:
+                    break;
+            }
         }
 #ifdef TRACE2_PIN
         digitalWrite(TRACE2_PIN, LOW);
@@ -134,8 +157,9 @@ void setupBLE(options_t &opt, config_t &config) {
 
     // Set the callback for when devices are discovered, no duplicates.
     pBLEScan->setScanCallbacks(new ScanCallbacks(&opt, &config), false);
-    pBLEScan->setActiveScan(false);  // Set active scanning, this will get more
-                                    // data from the advertiser.
+    pBLEScan->setActiveScan(
+        false);  // save power - we do not need the display name
+
     pBLEScan->setInterval(
         97);  // How often the scan occurs / switches channels; in milliseconds,
     pBLEScan->setWindow(
