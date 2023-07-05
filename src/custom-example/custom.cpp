@@ -7,14 +7,6 @@
 
 #define DEFAULT_ALPHA 0.05 // weight of last sample wrt history
 
-// none of contents of custom_t is visible or modifiable outside this file.
-struct custom_t {
-#ifdef SMOOTHING_DEMO
-  float smoothedBaroAlt = NAN;
-  float alpha;
-#endif
-};
-
 struct custom_t custom;
 
 void customInitCode(const config_t &config, options_t &options) {
@@ -87,4 +79,12 @@ void customCommands(const config_t &config, options_t &options) {
     LOGD("setting alpha: {}", custom.alpha);
   });
 #endif
+  cmdCallback.addCmd("TEMPS", [](CmdParser *cp) {
+
+    LOGD("env_temp_C: {}", custom.env_temp_C);
+    LOGD("env_hum_pct: {}", custom.env_hum_pct);
+    LOGD("oat_temp_C: {}", custom.oat_temp_C);
+    LOGD("oat_hum_pct: {}", custom.env_temp_C);
+  });
+
 }
