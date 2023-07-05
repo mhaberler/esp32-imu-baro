@@ -81,6 +81,9 @@ class ScanCallbacks : public NimBLEScanCallbacks {
                 serializeJson(BLEdata, Serial);
                 Serial.println("");
             }
+
+            // test for envelope mac address and record temp if so
+            
         }
 #ifdef TRACE2_PIN
         digitalWrite(TRACE2_PIN, LOW);

@@ -46,6 +46,7 @@
 #include <Fmt.h>
 #include <StreamUtils.h>
 #include <lockless_tripplebuffer/TripleBuffer.h>
+#include <NimBLEDevice.h>
 
 #ifdef TELEPLOT
 #include "teleplot/Teleplot.h"
@@ -117,7 +118,6 @@ extern TinyGPSPlus serialGps;
 #include <FlowSensor.hpp>
 #include <QuadratureDecoder.hpp>
 
-
 #ifdef LITTLEFS
 #include <LittleFS.h>
 #endif
@@ -147,12 +147,13 @@ extern TinyGPSPlus serialGps;
 #define TOSTRING(x)  STRINGIFY(x)
 #define AT           __FILE__ ":" TOSTRING(__LINE__)
 
-#define SSID_SIZE   32
-#define IPADR_SIZE  32
-#define WSPATH_SIZE 32
-#define PATH_SIZE   64
-#define NUM_SSID    10
-#define NUM_SPI     2
+#define SSID_SIZE      32
+#define IPADR_SIZE     32
+#define WSPATH_SIZE    32
+#define PATH_SIZE      64
+#define NUM_SSID       10
+#define NUM_SPI        2
+#define NUM_BLESENSORS 20
 
 typedef enum {
     DEV_NONE,
@@ -304,6 +305,60 @@ typedef struct {
     };
 } slowSensorReport_t;
 
+typedef enum {
+    SENSOR_NONE        = 0,
+    SENSOR_RUUVI       = 3,
+    SENSOR_FLYTEC_TT34 = 4,
+    SENSOR_TE5600      = 5,
+    SENSOR_MOPEKA      = 6,
+    SENSOR_TRUMA       = 7,
+    SENSOR_HRM         = 8,  // heart rate monitor
+    SENSOR_TPMS1       = 9,
+    SENSOR_TPMS2       = 10,
+    SENSOR_FLOWSENSOR  = 11,
+    SENSOR_MIB_SCALE   = 12
+} sensor_type_t;
+
+typedef enum {
+    BT_ENVELOPE = 0,
+    BT_OAT      = 1,
+
+    BT_FLOW1 = 10,
+    BT_FLOW2 = 11,
+    BT_FLOW3 = 12,
+    BT_FLOW4 = 13,
+
+    BT_LEVEL1 = 20,
+    BT_LEVEL2 = 21,
+    BT_LEVEL3 = 22,
+    BT_LEVEL4 = 23,
+    BT_LEVEL5 = 24,
+    BT_LEVEL6 = 25,
+
+    BT_WEIGHT1 = 40,
+    BT_WEIGHT2 = 41,
+    BT_WEIGHT3 = 42,
+    BT_WEIGHT4 = 43,
+    BT_WEIGHT5 = 44,
+    BT_WEIGHT6 = 45,
+
+    BT_PRESSURE1 = 60,
+    BT_PRESSURE2 = 61,
+    BT_PRESSURE3 = 62,
+    BT_PRESSURE4 = 63,
+    BT_PRESSURE5 = 64,
+    BT_PRESSURE6 = 65
+} ble_sensor_usage_t;
+
+// config per BLE sensor
+// NUM_BLESENSORS
+typedef struct {
+    char name[8];
+    sensor_type_t type;
+    ble_sensor_usage_t usage;
+    char blemac[20];
+} BLEsensor_t;
+
 typedef struct {
     accel_type_t accel_type;
     const char *accel_name;
@@ -321,7 +376,7 @@ typedef struct {
     bool serialgps_avail;
     bool flowsensor_avail;
     bool quad_sensor_avail;
-    
+
     IPAddress currentTpHost;
     uint16_t currentTpPort;
 
@@ -377,6 +432,7 @@ typedef struct {
     SpiRamJsonDocument *root, *client_result;
 
     uint32_t ble_ads;
+    // NimBLEAddress nimble_adr[NUM_BLESENSORS];
 
 } config_t;  // FIXME should be status_t
 
@@ -427,7 +483,7 @@ typedef struct {
     // single-pin FlowSensor
     int16_t flowsensor_pin;
 
-    // dual-pin QuadratureDecoder 
+    // dual-pin QuadratureDecoder
     int16_t qs_pinA;
     int16_t qs_pinB;
     uint8_t qs_step;
@@ -448,6 +504,9 @@ typedef struct {
     char ap_password[SSID_SIZE];
     // ntp
     char ntp_poolname[IPADR_SIZE];
+
+    // BLE sensors
+    BLEsensor_t blesensors[NUM_BLESENSORS];
 
     // teleplot
     int32_t tpPort;

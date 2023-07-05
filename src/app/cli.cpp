@@ -3,6 +3,7 @@
 #include "defs.hpp"
 #include <ESPmDNS.h>
 #include <WiFi.h>
+#include <NimBLEDevice.h>
 
 CmdCallback<NUM_COMMANDS> cmdCallback;
 CmdBuffer<CMD_BUFSIZE> buffer;
@@ -49,6 +50,11 @@ void help(options_t &options, config_t &config, CmdParser *cp) {
     Console.fmtln(
         "  ble [rate] | [rate core prio stack] query or set BLE scanner"
         "(rate < 0 disables BLE)");
+
+    Console.fmtln(
+        "  bs [<index> name macaddress type usage]"
+        " list all, or configure a particular BLE sensor");
+
     Console.fmtln(
         "  ssid <ssid1> [ssid2] ...# set WiFi SSID's to connect to, "
         "currently {}:",
@@ -300,6 +306,62 @@ void initShell(void) {
                           options.ble_stack);
         }
     });
+
+    // "  bs [<index> name macaddress type usage]"
+    // "list all, or configure a particular BLE sensor");
+
+    cmdCallback.addCmd("BS", [](CmdParser *cp) {
+        if (cp->getParamCount() < 2) {
+            int n = 0;
+            for (auto i = 0; i < NUM_BLESENSORS; i++) {
+                BLEsensor_t *bp = &options.blesensors[i];
+                switch (bp->type) {
+                    case SENSOR_NONE:
+                        continue;
+                    default:
+                        n++;
+                        Console.fmtln(
+                            "sensor {}: name={} type={} usage={} mac={}", i,
+                            bp->name, (uint32_t)bp->type, (uint32_t)bp->usage,
+                            bp->blemac);
+                }
+            }
+            Console.fmtln("ble sensors configured: {}", n);
+            return;
+        }
+        if (cp->getParamCount() != 6) {
+            Console.fmtln("usage: bs [<index> name macaddress type usage]");
+            return;
+        }
+        uint32_t i = atoi(cp->getCmdParam(1));
+        if (i > NUM_BLESENSORS - 1) {
+            Console.fmtln("index {} out of range, must be <  {}", i,
+                          NUM_BLESENSORS);
+            return;
+        }
+        BLEsensor_t *bp           = &options.blesensors[i];
+        NimBLEAddress const &zero = NimBLEAddress((uint64_t)0, (uint8_t)0);
+        NimBLEAddress const &adr =
+            NimBLEAddress(std::string(cp->getCmdParam(3)));
+
+        if (adr.equals(zero)) {
+            Console.fmtln("could not parse '{}' into a MAC address",
+                          cp->getCmdParam(3));
+            return;
+        }
+        // remember the converted-back version of what was given
+        strncpy(bp->blemac, std::string(adr).c_str(), sizeof(bp->blemac));
+        // remember in parsed form
+        // config.nimble_adr[i] = adr;
+
+        strncpy(bp->name, cp->getCmdParam(2), sizeof(bp->name));
+        bp->type  = (sensor_type_t)atoi(cp->getCmdParam(4));
+        bp->usage = (ble_sensor_usage_t)atoi(cp->getCmdParam(5));
+        Console.fmtln("sensor {} set to: name={} type={} usage={} mac={}", i,
+                      bp->name, (uint32_t)bp->type, (uint32_t)bp->usage,
+                      bp->blemac);
+    });
+
     cmdCallback.addCmd("SSID", [](CmdParser *cp) {
         if (cp->getParamCount() < 2) {
             Console.fmtln("ssid: at least one SSID needed");

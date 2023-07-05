@@ -73,6 +73,7 @@ static options_t defaults = {
     {.ap_ssid = AP_SSID},
     {.ap_password = AP_PASSWORD},
     {.ntp_poolname = NTP_POOL},
+
     .tpPort         = -1,
     .gps_speed      = SERIAL_GPS_SPEED,
     .gps_rx_pin     = SERIAL_GPS_RXPIN,
