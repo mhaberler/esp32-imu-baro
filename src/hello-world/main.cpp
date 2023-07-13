@@ -8,6 +8,9 @@
 #include "Esp.h"
 
 void setup() {
+      uint32_t heapsize =  ESP.getHeapSize();
+  uint32_t freeheap =  ESP.getFreeHeap();
+
 #ifdef M5UNIFIED
     auto cfg = M5.config();
     M5.begin(cfg);
@@ -18,6 +21,8 @@ void setup() {
         yield();
     }
     Serial.printf("Hello, World!\n");
+    Serial.printf("ab setup: heapsize=%u  freeheap=%u\n",heapsize, freeheap);
+
 }
 
 void loop() {

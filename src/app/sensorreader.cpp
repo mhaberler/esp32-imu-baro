@@ -192,12 +192,12 @@ void handleSensors(void) {
     // #ifdef IMU_PIN
     //   TOGGLE(IMU_PIN);
     // #endif
-
+#ifdef MOTIONCAL
     if (motion_cal) {
         MotionCal(state, options, config);
         return;
     }
-
+#endif
     if (config.gcal_samples == 0) {
         // true once GYRO_SAMPLES have been taken
         // so we're done
