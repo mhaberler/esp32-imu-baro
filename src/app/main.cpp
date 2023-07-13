@@ -401,7 +401,12 @@ void setup(void) {
 
     // click power button twice during boot to wipe config
     if (M5.BtnPWR.wasClicked() && (M5.BtnPWR.getClickCount() >= MIN_CLICKS_FOR_WIPE)) {
-        Serial.printf("resetting to default config:\n");
+        Serial.printf("power button clicked - resetting to default config:\n");
+        wipePrefs();
+        ESP.restart();
+    }
+    if (Serial.available() && (Serial.read() == 'x')) {
+        Serial.printf("x received - resetting to default config:\n");
         wipePrefs();
         ESP.restart();
     }

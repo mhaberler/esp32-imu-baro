@@ -329,7 +329,7 @@ void initShell(void) {
             Console.fmtln("ble sensors configured: {}", n);
             return;
         }
-        if (strcasecmp(cp->getCmdParam(1),"clear") == 0) {
+        if (strcasecmp(cp->getCmdParam(1), "clear") == 0) {
             memset(options.blesensors, 0, sizeof(options.blesensors));
             Console.fmtln("bs clear: wiped ble sensors table");
             return;
@@ -699,12 +699,19 @@ void initShell(void) {
                       WiFi.localIP().toString().c_str(),
                       WiFi.gatewayIP().toString().c_str(),
                       WiFi.subnetMask().toString().c_str(), WiFi.RSSI());
-        Console.fmtln("flowsensor pin={} IRQs={} enabled={} valid={}",
-                      flow_sensor.pinNum(), flow_sensor.numIrqs(),
-                      flow_sensor.enabled(),
-                      digitalPinIsValid(flow_sensor.pinNum()));
+        Console.fmtln("flowsensor pin={}/{} IRQs={} enabled={}",
+                      flow_sensor.pinNum(),
+                      T2OK(digitalPinIsValid(flow_sensor.pinNum())),
+                      flow_sensor.numIrqs(), flow_sensor.enabled());
+        Console.fmtln(
+            "quadrature sensor pinA={}/{} pinB={}/{} IRQs={} enabled={}",
+            quad_sensor.pinA(), T2OK(digitalPinIsValid(quad_sensor.pinA())),
+            quad_sensor.pinB(), T2OK(digitalPinIsValid(quad_sensor.pinB())),
+            quad_sensor.numIrqs(), quad_sensor.enabled());
         Console.fmtln("BLE rate={:.1f} ads={}", options.ble_rate,
                       config.ble_ads);
+        Console.fmtln("Power button: wasClicked={} getClickCount={}",
+                      M5.BtnPWR.wasClicked(), M5.BtnPWR.getClickCount());
     });
     cmdCallback.addCmd("ND", [](CmdParser *cp) {
         options.ndjson = !options.ndjson;
