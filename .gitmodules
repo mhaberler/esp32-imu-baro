@@ -106,3 +106,6 @@
 [submodule "lib/decoder"]
 	path = lib/decoder
 	url = https://github.com/mhaberler/decoder.git
+[submodule "lib/esp-nimble-cpp"]
+	path = lib/esp-nimble-cpp
+	url = https://github.com/mhaberler/esp-nimble-cpp.git
