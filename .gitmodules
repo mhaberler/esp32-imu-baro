@@ -85,9 +85,6 @@
 [submodule "lib/SdFat"]
 	path = lib/SdFat
 	url = https://github.com/mhaberler/SdFat.git
-[submodule "lib/NimBLE-Arduino"]
-	path = lib/NimBLE-Arduino
-	url = https://github.com/mhaberler/NimBLE-Arduino.git
 [submodule "lib/fmtlib"]
 	path = lib/fmtlib
 	url = https://github.com/mhaberler/fmtlib.git
