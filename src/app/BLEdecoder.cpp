@@ -1,11 +1,10 @@
 #ifdef BLE_DECODER
 
-#include "defs.hpp"
-
 #include "NimBLEDevice.h"
 #include "decoder.h"
+#include "../custom-example/custom.hpp"
 
-#include "custom.hpp"
+
 extern struct custom_t custom;
 
 NimBLEScan *pBLEScan;
@@ -14,10 +13,10 @@ TheengsDecoder decoder;
 
 static StaticJsonDocument<512> doc;
 
-class ScanCallbacks : public NimBLEScanCallbacks {
+class ScanCallbacks : public NimBLEAdvertisedDeviceCallbacks {
    public:
     ScanCallbacks(options_t *opt, config_t *config)
-        : NimBLEScanCallbacks(), _opt(opt), _config(config) {
+        : NimBLEAdvertisedDeviceCallbacks(), _opt(opt), _config(config) {
     }
 
     std::string convertServiceData(std::string deviceServiceData) {

@@ -2,7 +2,7 @@
 #include "FlowSensor.hpp"
 #include "Ticker.h"
 #include "TimerStats.h"
-#include "custom.hpp"
+#include "../custom-example/custom.hpp"
 #include "defs.hpp"
 #ifdef TREEWALKER
 #include "fsVisitor.hpp"

@@ -1,5 +1,5 @@
 #include "TimerStats.h"
-#include "custom.hpp"
+#include "../custom-example/custom.hpp"
 #include "defs.hpp"
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h>
 

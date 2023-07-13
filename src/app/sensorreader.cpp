@@ -1,6 +1,6 @@
 #include "FlowSensor.hpp"
 #include "TimerStats.h"
-#include "custom.hpp"
+#include "../custom-example/custom.hpp"
 #include "defs.hpp"
 
 static sensor_state_t initTB = {
