@@ -28,11 +28,11 @@ public:
     if (pinB < 0)
       return;
     if (!digitalPinIsValid(pinA)) {
-      ESP_LOGD(__FILE__, "invalid pinA: %d", pinA);
+      ESP_LOGE(__FILE__, "invalid pinA: %d", pinA);
       return;
     }
     if (!digitalPinIsValid(pinB)) {
-      ESP_LOGD(__FILE__, "invalid pinB: %d", pinB);
+      ESP_LOGE(__FILE__, "invalid pinB: %d", pinB);
       return;
     }
     pinA_ = pinA;
@@ -89,6 +89,10 @@ public:
 
   bool enabled(void) { return enabled_; }
 
+  int16_t pinA(void) { return pinA_;}
+  int16_t pinB(void) { return pinB_;}
+  uint32_t numIrqs(void) { return updates_;}
+  
   friend void pinChange(QuadratureDecoder *q);
 
 private:
