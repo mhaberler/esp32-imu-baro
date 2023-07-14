@@ -1,6 +1,4 @@
-# This file was automatically generated for projects
-# without default 'CMakeLists.txt' file.
-
+# mah was here
 FILE(GLOB_RECURSE app_sources
     ${CMAKE_SOURCE_DIR}/src/app/*.*
     ${CMAKE_SOURCE_DIR}/src/custom-example/*.*
@@ -8,3 +6,4 @@ FILE(GLOB_RECURSE app_sources
 )
 
 idf_component_register(SRCS ${app_sources})
+# component_compile_options(-Wno-error)
