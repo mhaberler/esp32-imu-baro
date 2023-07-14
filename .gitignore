@@ -53,3 +53,4 @@ notes.txt
 *.pyc
 retired/
 logs/
+sdkconfig.custom_demo_m5stack_coreS3
