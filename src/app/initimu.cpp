@@ -187,7 +187,8 @@ bool initIMU(options_t &options, config_t &config) {
             }
 
             if (!config.dev[I2C_BMM150] && !config.dev[I2C_BMI270]) {
-                delete bmi270_bmm150;
+#warning "fix delete bmi270_bmm150;"
+           //     delete bmi270_bmm150;
             } else {
                 initialized = true;
             }

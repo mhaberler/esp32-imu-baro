@@ -13,7 +13,7 @@ TheengsDecoder decoder;
 
 static StaticJsonDocument<512> doc;
 
-class ScanCallbacks : public NimBLEAdvertisedDeviceCallbacks {
+class ScanCallbacks : public BLEAdvertisedDeviceCallbacks {
    public:
     ScanCallbacks(options_t *opt, config_t *config)
         : NimBLEAdvertisedDeviceCallbacks(), _opt(opt), _config(config) {
@@ -132,7 +132,7 @@ class ScanCallbacks : public NimBLEAdvertisedDeviceCallbacks {
 };
 
 void setupBLE(options_t &opt, config_t &config) {
-    NimBLEDevice::setScanFilterMode(CONFIG_BTDM_SCAN_DUPL_TYPE_DATA);
+    //NimBLEDevice::setScanFilterMode(CONFIG_BTDM_SCAN_DUPL_TYPE_DATA);
     NimBLEDevice::setScanDuplicateCacheSize(200);
     NimBLEDevice::init("");
     // NimBLEDevice::setPower(ESP_PWR_LVL_P9);
@@ -155,7 +155,7 @@ void setupBLE(options_t &opt, config_t &config) {
     pBLEScan->setFilterPolicy(BLE_HCI_SCAN_FILT_NO_WL);
 
     // Set the callback for when devices are discovered, no duplicates.
-    pBLEScan->setScanCallbacks(new ScanCallbacks(&opt, &config), false);
+    pBLEScan->setAdvertisedDeviceCallbacks(new ScanCallbacks(&opt, &config), false);
     pBLEScan->setActiveScan(
         false);  // save power - we do not need the display name
 
