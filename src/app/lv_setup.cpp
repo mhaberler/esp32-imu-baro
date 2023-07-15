@@ -2,10 +2,10 @@
 #ifdef LVGL_UI
 
 #include <Arduino.h>
-#if defined(PLATFORM_M5CORE2)
-#include <M5Core2.h>
-#endif
-#if defined(PLATFORM_M5CORES3)
+// #if defined(PLATFORM_M5CORE2)
+// #include <M5Core2.h>
+// #endif
+#if defined(M5UNIFIED)
 // #include <M5CoreS3.h>
 #include <M5Unified.h>
 #endif

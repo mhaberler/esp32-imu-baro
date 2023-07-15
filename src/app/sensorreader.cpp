@@ -2,6 +2,7 @@
 #include "TimerStats.h"
 #include "../custom-example/custom.hpp"
 #include "defs.hpp"
+#include "lv_setup.h"
 
 static sensor_state_t initTB = {
     .final_accel = {.type = SENSOR_TYPE_ACCELEROMETER},
@@ -189,9 +190,9 @@ void handleSensors(void) {
             break;
     }
 
-    // #ifdef IMU_PIN
-    //   TOGGLE(IMU_PIN);
-    // #endif
+        // #ifdef IMU_PIN
+        //   TOGGLE(IMU_PIN);
+        // #endif
 #ifdef MOTIONCAL
     if (motion_cal) {
         MotionCal(state, options, config);
@@ -307,6 +308,7 @@ void handleSensors(void) {
 #ifdef EXTRA_PIN
     TOGGLE(EXTRA_PIN);
 #endif
+    lv_handler();
     if (run_sensors) {
         sequence++;
         switch (sequence) {

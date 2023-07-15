@@ -17,6 +17,8 @@
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h>
 #include <WebSerial.h>
 #include "esp_ota_ops.h"
+#include "lv_setup.h"
+#include "ui/ui.h"
 
 Adafruit_FXOS8700 *fxos;
 Adafruit_FXAS21002C *fxas;
@@ -264,6 +266,8 @@ void setup(void) {
         wipePrefs();
         ESP.restart();
     }
+    lv_begin();
+    ui_init();
 
     bool cfg_read = readPrefs(options);
     if (!cfg_read) {
@@ -477,6 +481,8 @@ void background(void) {
     //     wipePrefs();
     //     ESP.restart();
     // }
+
+    // lv_handler();
 
 #ifdef BACKGROUND_PIN
     digitalWrite(BACKGROUND_PIN, LOW);
