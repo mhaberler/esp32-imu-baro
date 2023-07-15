@@ -18,7 +18,9 @@
 #include <WebSerial.h>
 #include "esp_ota_ops.h"
 #include "lv_setup.h"
+#if defined(LVGL_UI)
 #include "ui/ui.h"
+#endif
 
 Adafruit_FXOS8700 *fxos;
 Adafruit_FXAS21002C *fxas;
@@ -221,12 +223,10 @@ bool init_calibration(options_t &opt, config_t &config) {
 }
 
 void setup(void) {
-    uint32_t heapsize = ESP.getHeapSize();
-    uint32_t freeheap = ESP.getFreeHeap();
 
-#ifdef STARTUP_DELAY
-    delay(STARTUP_DELAY);  // let USB settle
-#endif
+// #ifdef STARTUP_DELAY
+//     delay(STARTUP_DELAY);  // let USB settle
+// #endif
 
 #ifdef M5UNIFIED
     auto cfg            = M5.config();
@@ -241,7 +241,6 @@ void setup(void) {
 #else
     Serial.begin(BAUD);
 #endif
-    Serial.printf("startup heapsize=%u  freeheap=%u\n", heapsize, freeheap);
 
     /* Wait for the Serial Monitor */
     // while (!Serial) {
@@ -267,7 +266,9 @@ void setup(void) {
         ESP.restart();
     }
     lv_begin();
+#if defined(LVGL_UI)
     ui_init();
+#endif
 
     bool cfg_read = readPrefs(options);
     if (!cfg_read) {
