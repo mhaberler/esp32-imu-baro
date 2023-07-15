@@ -1,6 +1,6 @@
 #ifndef __CUSTOMVALUES_H__
 #define __CUSTOM_H__
-#include "defs.hpp"
+#include "../app/defs.hpp"
 
 struct custom_t {
 #ifdef SMOOTHING_DEMO

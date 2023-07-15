@@ -1,11 +1,10 @@
 #ifdef BLE_DECODER
 
-#include "defs.hpp"
-
 #include "NimBLEDevice.h"
 #include "decoder.h"
+#include "../custom-example/custom.hpp"
 
-#include "custom.hpp"
+
 extern struct custom_t custom;
 
 NimBLEScan *pBLEScan;
@@ -14,10 +13,10 @@ TheengsDecoder decoder;
 
 static StaticJsonDocument<512> doc;
 
-class ScanCallbacks : public NimBLEScanCallbacks {
+class ScanCallbacks : public BLEAdvertisedDeviceCallbacks {
    public:
     ScanCallbacks(options_t *opt, config_t *config)
-        : NimBLEScanCallbacks(), _opt(opt), _config(config) {
+        : NimBLEAdvertisedDeviceCallbacks(), _opt(opt), _config(config) {
     }
 
     std::string convertServiceData(std::string deviceServiceData) {
@@ -133,7 +132,7 @@ class ScanCallbacks : public NimBLEScanCallbacks {
 };
 
 void setupBLE(options_t &opt, config_t &config) {
-    NimBLEDevice::setScanFilterMode(CONFIG_BTDM_SCAN_DUPL_TYPE_DATA);
+    //NimBLEDevice::setScanFilterMode(CONFIG_BTDM_SCAN_DUPL_TYPE_DATA);
     NimBLEDevice::setScanDuplicateCacheSize(200);
     NimBLEDevice::init("");
     // NimBLEDevice::setPower(ESP_PWR_LVL_P9);
@@ -156,7 +155,7 @@ void setupBLE(options_t &opt, config_t &config) {
     pBLEScan->setFilterPolicy(BLE_HCI_SCAN_FILT_NO_WL);
 
     // Set the callback for when devices are discovered, no duplicates.
-    pBLEScan->setScanCallbacks(new ScanCallbacks(&opt, &config), false);
+    pBLEScan->setAdvertisedDeviceCallbacks(new ScanCallbacks(&opt, &config), false);
     pBLEScan->setActiveScan(
         false);  // save power - we do not need the display name
 

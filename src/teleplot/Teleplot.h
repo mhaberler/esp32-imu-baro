@@ -8,7 +8,7 @@
 #ifdef EMBEDDED
 #include <Arduino.h>
 #include <IPAddress.h>
-#include <StreamLib.h>
+// #include <StreamLib.h>
 #include <WiFiUdp.h>
 
 // workaround https://github.com/fmtlib/fmt/pull/2440
