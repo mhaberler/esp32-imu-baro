@@ -316,7 +316,8 @@ typedef enum {
     SENSOR_TPMS1       = 9,
     SENSOR_TPMS2       = 10,
     SENSOR_FLOWSENSOR  = 11,
-    SENSOR_MIB_SCALE   = 12
+    SENSOR_MIB_SCALE   = 12,
+    SENSOR_LIDL_BATTERY = 13
 } sensor_type_t;
 
 typedef enum {
@@ -347,7 +348,14 @@ typedef enum {
     BT_PRESSURE3 = 62,
     BT_PRESSURE4 = 63,
     BT_PRESSURE5 = 64,
-    BT_PRESSURE6 = 65
+    BT_PRESSURE6 = 65,
+
+    BT_BATTERY1 = 70,
+    BT_BATTERY2 = 71,
+    BT_BATTERY3 = 72,
+    BT_BATTERY4 = 73,
+    BT_BATTERY5 = 74,
+    
 } ble_sensor_usage_t;
 
 // config per BLE sensor
