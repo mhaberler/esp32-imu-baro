@@ -200,11 +200,15 @@ reboot
 
 ## Build & debug
 
+## Build & debug
+
 ### fresh install in a new repo
 ````
 git clone  --recursive https://github.com/mhaberler/esp32-imu-baro.git
 cd esp32-imu-baro/
-git checkout -b 
+git checkout -b test origin/rev-0.9-esp-idf-arduino
+git submodule sync --recursive
+git submodule update --init --recursive
 ````
 - Open folder `esp32-imu-baro` in VSCode 
 - Choose target custom_demo_m5stack_coreS3_jtag
@@ -215,13 +219,15 @@ git checkout -b
 ````
 git remote add github-mah https://github.com/mhaberler/esp32-imu-baro.git
 git fetch  github-mah 
-git checkout -b test github-mah/
+git checkout -b test github-mah/rev-0.9-esp-idf-arduino
 cd esp32-imu-baro/
-
+git submodule sync --recursive
+git submodule update --init --recursive
 ````
 
 ## plans:
 - add calibration
+- add proper logging
 
 ## supported baro sensors: LPS22, DPS310, DPS36x,BMP3xx
 
