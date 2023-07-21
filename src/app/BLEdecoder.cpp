@@ -4,7 +4,6 @@
 #include "decoder.h"
 #include "../custom-example/custom.hpp"
 
-
 extern struct custom_t custom;
 
 NimBLEScan *pBLEScan;
@@ -43,19 +42,18 @@ class ScanCallbacks : public BLEAdvertisedDeviceCallbacks {
 #ifdef TRACE2_PIN
         digitalWrite(TRACE2_PIN, HIGH);
 #endif
+        char *manufacturerdata = NULL;
         _config->ble_ads += 1;
 
-        JsonObject BLEdata = doc.to<JsonObject>();
-
+        JsonObject BLEdata    = doc.to<JsonObject>();
         const BLEsensor_t *bp = findSensor(advertisedDevice->getAddress());
+
         if (bp == NULL) {
             return;
         }
         String mac_adress = advertisedDevice->getAddress().toString().c_str();
         mac_adress.toUpperCase();
-        if (_opt->trace & INFO_BLE_ADS) {
-            LOGD("BLE: {}", advertisedDevice->toString().c_str());
-        }
+
         _config->ble_ads_accepted += 1;
         BLEdata["id"] = (char *)mac_adress.c_str();
 
@@ -63,11 +61,10 @@ class ScanCallbacks : public BLEAdvertisedDeviceCallbacks {
             BLEdata["name"] = (char *)advertisedDevice->getName().c_str();
 
         if (advertisedDevice->haveManufacturerData()) {
-            char *manufacturerdata = BLEUtils::buildHexData(
+            manufacturerdata = BLEUtils::buildHexData(
                 NULL, (uint8_t *)advertisedDevice->getManufacturerData().data(),
                 advertisedDevice->getManufacturerData().length());
             BLEdata["manufacturerdata"] = manufacturerdata;
-            free(manufacturerdata);
         }
 
         if (advertisedDevice->haveRSSI())
@@ -87,21 +84,24 @@ class ScanCallbacks : public BLEAdvertisedDeviceCallbacks {
                 BLEdata["servicedatauuid"] = (char *)serviceDatauuid.c_str();
             }
         }
-        if (decoder.decodeBLEJson(BLEdata)) {
+        int success = decoder.decodeBLEJson(BLEdata);
+        if (_opt->trace & INFO_BLE_SENSORS) {
+            Serial.printf("sensor %s: ", bp->name);
+            serializeJson(BLEdata, Serial);
+            Serial.println("");
+        }
+        if (success > -1) {
             // BLEdata.remove("manufacturerdata");
-            BLEdata.remove("servicedata");
-            BLEdata.remove("servicedatauuid");
-            BLEdata.remove("type");
-            BLEdata.remove("cidc");
-            BLEdata.remove("acts");
-            BLEdata.remove("cont");
-            BLEdata.remove("track");
-            if (_opt->trace & INFO_BLE_SENSORS) {
-                Serial.printf("sensor %s: ", bp->name);
-                serializeJson(BLEdata, Serial);
-                Serial.println("");
-            }
-            // test for important sensors which should go into the global or custom state
+            // BLEdata.remove("servicedata");
+            // BLEdata.remove("servicedatauuid");
+            // BLEdata.remove("type");
+            // BLEdata.remove("cidc");
+            // BLEdata.remove("acts");
+            // BLEdata.remove("cont");
+            // BLEdata.remove("track");
+
+            // test for important sensors which should go into the global or
+            // custom state
             switch (bp->usage) {
                 case BT_ENVELOPE:
                     if (bp->type == SENSOR_RUUVI) {
@@ -122,7 +122,17 @@ class ScanCallbacks : public BLEAdvertisedDeviceCallbacks {
                 default:
                     break;
             }
+            // }
+            // else {
+            // if (_opt->trace & INFO_BLE_ADS) {
+            //     LOGD("undecoded: sensor={} mac={} mfd={} rssi={}",
+            //          (char *)&bp->name, mac_adress.c_str(),
+            //          manufacturerdata ? manufacturerdata : "",
+            //          advertisedDevice->getRSSI());
+            // }
         }
+        if (manufacturerdata) free(manufacturerdata);
+
 #ifdef TRACE2_PIN
         digitalWrite(TRACE2_PIN, LOW);
 #endif
@@ -132,7 +142,7 @@ class ScanCallbacks : public BLEAdvertisedDeviceCallbacks {
 };
 
 void setupBLE(options_t &opt, config_t &config) {
-    //NimBLEDevice::setScanFilterMode(CONFIG_BTDM_SCAN_DUPL_TYPE_DATA);
+    // NimBLEDevice::setScanFilterMode(CONFIG_BTDM_SCAN_DUPL_TYPE_DATA);
     NimBLEDevice::setScanDuplicateCacheSize(200);
     NimBLEDevice::init("");
     // NimBLEDevice::setPower(ESP_PWR_LVL_P9);
@@ -155,7 +165,8 @@ void setupBLE(options_t &opt, config_t &config) {
     pBLEScan->setFilterPolicy(BLE_HCI_SCAN_FILT_NO_WL);
 
     // Set the callback for when devices are discovered, no duplicates.
-    pBLEScan->setAdvertisedDeviceCallbacks(new ScanCallbacks(&opt, &config), false);
+    pBLEScan->setAdvertisedDeviceCallbacks(new ScanCallbacks(&opt, &config),
+                                           false);
     pBLEScan->setActiveScan(
         false);  // save power - we do not need the display name
 

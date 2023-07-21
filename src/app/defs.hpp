@@ -361,7 +361,7 @@ typedef enum {
 // config per BLE sensor
 // NUM_BLESENSORS
 typedef struct {
-    char name[8];
+    char name[16];
     sensor_type_t type;
     ble_sensor_usage_t usage;
     char blemac[20];
