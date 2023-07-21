@@ -198,15 +198,27 @@ save
 reboot
 ````
 
-## Build
+## Build & debug
 
+### fresh install in a new repo
 ````
-git clone  https://github.com/mhaberler/esp32-imu-baro.git
+git clone  --recursive https://github.com/mhaberler/esp32-imu-baro.git
 cd esp32-imu-baro/
-git submodule update --init --recursive
+git checkout -b 
+````
+- Open folder `esp32-imu-baro` in VSCode 
+- Choose target custom_demo_m5stack_coreS3_jtag
+- build and upload
+- to debug: Debug->Pio Debug (without uploading)
+
+### update an existing repo
+````
+git remote add github-mah https://github.com/mhaberler/esp32-imu-baro.git
+git fetch  github-mah 
+git checkout -b test github-mah/
+cd esp32-imu-baro/
 
 ````
-Choose target and build.
 
 ## plans:
 - add calibration
