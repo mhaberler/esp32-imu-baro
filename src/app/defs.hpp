@@ -94,13 +94,6 @@
 #include <Adafruit_TSL2591.h>
 #endif
 
-#ifdef DRV_INA226
-#include <INA226.h>
-#endif
-
-#ifdef DRV_TSL2591
-#include <Adafruit_TSL2591.h>
-#endif
 
 #ifdef DRV_MPU6050
 #include <Adafruit_MPU6050.h>

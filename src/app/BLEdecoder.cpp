@@ -15,7 +15,7 @@ static StaticJsonDocument<512> doc;
 class ScanCallbacks : public BLEAdvertisedDeviceCallbacks {
    public:
     ScanCallbacks(options_t *opt, config_t *config)
-        : NimBLEAdvertisedDeviceCallbacks(), _opt(opt), _config(config) {
+        : NimBLEScanCallbacks(), _opt(opt), _config(config) {
     }
 
     std::string convertServiceData(std::string deviceServiceData) {
@@ -167,7 +167,7 @@ void setupBLE(options_t &opt, config_t &config) {
     pBLEScan->setFilterPolicy(BLE_HCI_SCAN_FILT_NO_WL);
 
     // Set the callback for when devices are discovered, no duplicates.
-    pBLEScan->setAdvertisedDeviceCallbacks(new ScanCallbacks(&opt, &config),
+    pBLEScan->setScanCallbacks(new ScanCallbacks(&opt, &config),
                                            false);
     pBLEScan->setActiveScan(
         false);  // save power - we do not need the display name
