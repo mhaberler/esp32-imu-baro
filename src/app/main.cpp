@@ -100,6 +100,7 @@ const char *percent_ = "%";
 void background(void);
 
 // WriteBufferingStream bufferedLogger(config.log_fd, LOG_BUF);
+WriteBufferingStream *bufferedLogger;
 
 WriteBufferingStream bufferedWebSerialOut(WebSerial, WS_BUF);
 Stream *streams[2] = {&Serial, &bufferedWebSerialOut};
@@ -472,8 +473,8 @@ void background(void) {
         }
     }
 #endif
-    if (run_logflush) {
-        // bufferedLogger.flush();
+    if (run_logflush && bufferedLogger) {
+        bufferedLogger->flush();
         run_logflush = false;
     }
     // click power button twice during boot to wipe config

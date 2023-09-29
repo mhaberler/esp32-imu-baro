@@ -442,7 +442,8 @@ typedef struct {
     bool log_open;
     char log_path[PATH_SIZE];
     SdBaseFile log_sdbase_fd;
-    SdFile log_fd;
+    SdBaseFile log_fd;
+    // SdFile log_fd;
     
     // SD card etc
     volatile int numCdInterrupts;
