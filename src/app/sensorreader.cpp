@@ -375,13 +375,23 @@ void handleSensors(void) {
                     slow.ina219.busvoltage   = ina219->getBusVoltage_V();
                     slow.ina219.shuntvoltage = ina219->getShuntVoltage_mV();
                     slow.ina219.current_mA   = ina219->getCurrent_mA();
-                    slow.ina219.loadvoltage  = ina219->getBusVoltage_V();
                     slow.ina219.power_mW     = ina219->getPower_mW();
                     slow.typus               = TYPE_INA219;
                     slow.timestamp           = abs_timestamp(config);
-
                     slowSensors.Enqueue(&slow);
                 }
+                if (config.dev[I2C_INA226]) {
+                    slowSensorReport_t slow;
+
+                    slow.ina226.busvoltage   = ina226->getBusVoltage();
+                    slow.ina226.shuntvoltage = ina226->getShuntVoltage_mV();
+                    slow.ina226.current_mA   = ina226->getCurrent_mA();
+                    slow.ina226.power_mW     = ina226->getPower_mW();
+                    slow.typus               = TYPE_INA226;
+                    slow.timestamp           = abs_timestamp(config);
+                    slowSensors.Enqueue(&slow);
+                }
+
                 break;
 
             case 4:

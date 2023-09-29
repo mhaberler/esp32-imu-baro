@@ -278,6 +278,14 @@ void reporter(config_t &config, options_t &opt) {
                                            TELEPLOT_FLAG_NOPLOT);
 #endif
                         break;
+                    case TYPE_INA226:
+#ifdef TELEPLOT
+
+                        teleplot.update_ms(dev + ".current", bp.timestamp,
+                                           bp.ina226.current_mA, mA,
+                                           TELEPLOT_FLAG_NOPLOT);
+#endif
+                        break;
                     case TYPE_TMP117:
 #ifdef TELEPLOT
 
@@ -315,15 +323,20 @@ void reporter(config_t &config, options_t &opt) {
                             j["shuntvoltage"] = bp.ina219.shuntvoltage;
                             j["busvoltage"]   = bp.ina219.busvoltage;
                             j["current_mA"]   = bp.ina219.current_mA;
-                            j["loadvoltage"]  = bp.ina219.loadvoltage;
                             j["power_mW"]     = bp.ina219.power_mW;
+                            break;
+                        case TYPE_INA226:
+                            j["shuntvoltage"] = bp.ina226.shuntvoltage;
+                            j["busvoltage"]   = bp.ina226.busvoltage;
+                            j["current_mA"]   = bp.ina226.current_mA;
+                            j["power_mW"]     = bp.ina226.power_mW;
                             break;
                         case TYPE_TMP117:
                             j["temperature"] = bp.tmp117.temperature;
                             break;
                         case TYPE_TSL2591:
                             j["infrared"] = bp.tsl2591.ir;
-                            j["full"] = bp.tsl2591.full;
+                            j["full"]     = bp.tsl2591.full;
                             break;
                         default:
                             break;

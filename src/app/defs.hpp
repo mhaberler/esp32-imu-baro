@@ -279,7 +279,6 @@ typedef struct {
     float shuntvoltage;
     float busvoltage;
     float current_mA;
-    float loadvoltage;
     float power_mW;
 } ina219_report_t;
 
@@ -287,7 +286,6 @@ typedef struct {
     float shuntvoltage;
     float busvoltage;
     float current_mA;
-    float loadvoltage;
     float power_mW;
 } ina226_report_t;
 
