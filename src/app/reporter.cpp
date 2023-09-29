@@ -16,8 +16,8 @@ extern QuadratureDecoder quad_sensor;
 
 TimerStats reporterStats, customReporterStats;
 
-static uint32_t last_report_us;  // micros() of last report
-static int64_t last_report_abs;  //  abs_timestamp(config) of last report
+static uint32_t last_report_us;   // micros() of last report
+static int64_t last_report_abs;   //  abs_timestamp(config) of last report
 
 static UBX_NAV_PVT_data_t ub_nav_pvt;
 static int64_t ub_nav_pvt_abs;
@@ -291,8 +291,8 @@ void reporter(config_t &config, options_t &opt) {
                                            bp.ina226.current_mA, mA,
                                            TELEPLOT_FLAG_NOPLOT);
 #endif
-                        break;
-                    case TYPE_TMP117:
+                              break;
+                        case TYPE_TMP117:
 #ifdef TELEPLOT
 
                         teleplot.update_ms(dev + ".temperature", bp.timestamp,
