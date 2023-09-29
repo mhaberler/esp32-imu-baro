@@ -427,21 +427,20 @@ void reporter(config_t &config, options_t &opt) {
 static void emitJson(const config_t &config, options_t &opt, jdoc_t &doc) {
     if (!doc.isNull()) {
         if (!options.ndjson) {
-            if (config.log_open) {
-                // serializeJsonPretty(doc, bufferedLogger);
-                // bufferedLogger.print("\n");
-            } else {
-                serializeJsonPretty(doc, Console);
-                Console.print("\n");
+            if (config.log_open && bufferedLogger) {
+                serializeJsonPretty(doc, *bufferedLogger);
+                bufferedLogger->print("\n");
             }
+            serializeJsonPretty(doc, Console);
+            Console.print("\n");
+
         } else {
-            if (config.log_open) {
-                // serializeJson(doc, bufferedLogger);
-                // bufferedLogger.print("\n");
-            } else {
-                serializeJson(doc, Console);
-                Console.print("\n");
+            if (config.log_open&& bufferedLogger) {
+                serializeJson(doc, *bufferedLogger);
+                bufferedLogger->print("\n");
             }
+            serializeJson(doc, Console);
+            Console.print("\n");
         }
         doc.clear();
     }

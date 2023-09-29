@@ -289,7 +289,6 @@ typedef struct {
     float power_mW;
 } ina226_report_t;
 
-
 typedef struct {
     float temperature;
 } tmp117_report_t;
@@ -442,8 +441,9 @@ typedef struct {
     bool ntp_time_set;
     bool log_open;
     char log_path[PATH_SIZE];
-    SdBaseFile log_fd;
-
+    SdBaseFile log_sdbase_fd;
+    SdFile log_fd;
+    
     // SD card etc
     volatile int numCdInterrupts;
     volatile bool cdLastState;
@@ -661,7 +661,7 @@ extern Fmt Console, serialConsole;
 #if defined(TELEPLOT)
 extern Teleplot teleplot;
 #endif
-extern WriteBufferingStream bufferedLogger;
+extern WriteBufferingStream *bufferedLogger;
 extern Ticker ubloxStartupTicker, stats_ticker;
 void flushBuffers(void);
 
