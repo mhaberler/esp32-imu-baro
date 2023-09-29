@@ -21,6 +21,8 @@ typedef enum {
     I2C_UBLOXI2C,
     I2C_TMP117,
     I2C_INA219,
+    I2C_INA226,
+    I2C_TSL2591,
     I2C_MAX,
 } i2c_dev_t;
 typedef enum { INT_I2C = 0, EXT_I2C = 1, I2C_NONE } i2cBus_t;

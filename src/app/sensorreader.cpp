@@ -411,6 +411,20 @@ void handleSensors(void) {
 #endif
                 }
                 break;
+            case 6:
+                if (config.dev[I2C_TSL2591]) {
+                    slowSensorReport_t slow;
+
+                    slow.typus        = TYPE_TSL2591;
+                    slow.timestamp    = abs_timestamp(config);
+                    slow.tsl2591.lum  = tsl2591->getFullLuminosity();
+                    slow.tsl2591.ir   = slow.tsl2591.lum >> 16;
+                    slow.tsl2591.full = slow.tsl2591.lum & 0xFFFF;
+                    slow.tsl2591.lux  = tsl2591->calculateLux(slow.tsl2591.full,
+                                                              slow.tsl2591.ir);
+                    slowSensors.Enqueue(&slow);
+                }
+                break;
             default:
                 run_sensors = false;
                 sequence    = -1;  // reset FSM

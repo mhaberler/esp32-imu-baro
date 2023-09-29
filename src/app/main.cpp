@@ -44,6 +44,8 @@ Adafruit_MPU6050 *mpu6050;
 MPU9250_DMP *mpu9250_dmp;
 Adafruit_MPU6886 *mpu6886;
 Adafruit_INA219 *ina219;
+Adafruit_TSL2591 *tsl2591;
+INA226 *ina226;
 Adafruit_TMP117 *tmp117;
 FlowSensor flow_sensor;
 QuadratureDecoder quad_sensor;

@@ -16,8 +16,7 @@ void initOtherSensors(options_t &options, config_t &config) {
     if ((options.qs_pinA > -1) && (options.qs_pinB > -1)) {
         quad_sensor.begin(options.qs_pinA, options.qs_pinB, options.qs_step,
                           options.qs_tick, options.qs_changeDeltaT,
-                          options.qs_inputMode,
-                          options.qs_edge);
+                          options.qs_inputMode, options.qs_edge);
 
         config.quad_sensor_avail = quad_sensor.enable();
         LOGD("quadrature sensor intialized at pins {} {}: {}", options.qs_pinA,
@@ -57,6 +56,21 @@ void initOtherSensors(options_t &options, config_t &config) {
     *dev = probe_dev("ina219", ina219_devs);
     if (*dev) {
         ina219->setCalibration_32V_2A();
+    }
+
+    dev  = &config.dev[I2C_INA226];
+    *dev = probe_dev("ina226", ina226_devs);
+    if (*dev) {
+        ina226->setAverage(0);
+    }
+
+    dev  = &config.dev[I2C_TSL2591];
+    *dev = probe_dev("tsl2591", tsl2591_devs);
+    if (*dev) {
+        // tsl2591->setGain(TSL2591_GAIN_LOW);    // 1x gain (bright light)
+        tsl2591->setGain(TSL2591_GAIN_MED);  // 25x gain
+        // tsl2591->setGain(TSL2591_GAIN_HIGH); // 428x gain
+        tsl2591->setTiming(TSL2591_INTEGRATIONTIME_100MS);
     }
 
     // bmp390 MUST be at default address 0x77 - collision with dps368 and dps310

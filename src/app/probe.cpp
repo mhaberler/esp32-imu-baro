@@ -81,6 +81,19 @@ static bool ina219_probe(TwoWire *bus, const i2c_probe_t &p) {
     return rc;
 }
 
+static bool ina226_probe(TwoWire *bus, const i2c_probe_t &p) {
+    ina226  = new INA226(p.addr, bus);
+    bool rc = ina226->begin();
+    if (!rc) delete ina226;
+    return rc;
+}
+static bool tsl2591_probe(TwoWire *bus, const i2c_probe_t &p) {
+    tsl2591 = new Adafruit_TSL2591();
+    bool rc = tsl2591->begin(bus, p.addr);
+    if (!rc) delete tsl2591;
+    return rc;
+}
+
 // probe arrays are terminated by a I2C_NONE bus  entry
 static const i2c_probe_t _bmm150_devs[] = {
     {EXT_I2C, BMM150_DEFAULT_I2C_ADDRESS, bmm150_probe, NULL},
@@ -102,7 +115,7 @@ static const i2c_probe_t _bmi270_devs[] = {
 
     {INT_I2C, BMI2_I2C_SEC_ADDR, bmi270_probe, NULL},
     {INT_I2C, BMI2_I2C_PRIM_ADDR, bmi270_probe, NULL},
-    
+
     {I2C_NONE, 0, NULL, NULL},
 };
 const i2c_probe_t *bmi270_devs = &_bmi270_devs[0];
@@ -217,7 +230,6 @@ static const i2c_probe_t _ina219_devs[] = {
     {EXT_I2C, INA219_CALC_ADDRESS(1, 0), ina219_probe, NULL},
     {EXT_I2C, INA219_CALC_ADDRESS(1, 1), ina219_probe, NULL},
 #ifndef PLATFORM_M5CORES3  // collides with ES7210 at Wire0 0x40
-
     {INT_I2C, INA219_CALC_ADDRESS(0, 0), ina219_probe, NULL},
     {INT_I2C, INA219_CALC_ADDRESS(0, 1), ina219_probe, NULL},
     {INT_I2C, INA219_CALC_ADDRESS(1, 0), ina219_probe, NULL},
@@ -226,3 +238,20 @@ static const i2c_probe_t _ina219_devs[] = {
     {I2C_NONE, 0, NULL, NULL},
 };
 const i2c_probe_t *ina219_devs = &_ina219_devs[0];
+
+static const i2c_probe_t _ina226_devs[] = {
+    {EXT_I2C, 0x40, ina226_probe, NULL},
+    // {INT_I2C, 0x40, ina226_probe, NULL},  // collision
+
+    {I2C_NONE, 0, NULL, NULL},
+};
+
+static const i2c_probe_t _tsl2591_devs[] = {
+    {EXT_I2C, TSL2591_ADDR, tsl2591_probe, NULL},
+    {INT_I2C, TSL2591_ADDR, tsl2591_probe, NULL},  // collision
+
+    {I2C_NONE, 0, NULL, NULL},
+};
+
+const i2c_probe_t *ina226_devs  = &_ina226_devs[0];
+const i2c_probe_t *tsl2591_devs = &_tsl2591_devs[0];

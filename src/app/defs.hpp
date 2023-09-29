@@ -86,6 +86,14 @@
 #include <Adafruit_INA219.h>
 #endif
 
+#ifdef DRV_INA226
+#include <INA226.h>
+#endif
+
+#ifdef DRV_TSL2591
+#include <Adafruit_TSL2591.h>
+#endif
+
 #ifdef DRV_MPU6050
 #include <Adafruit_MPU6050.h>
 #endif
@@ -276,8 +284,23 @@ typedef struct {
 } ina219_report_t;
 
 typedef struct {
+    float shuntvoltage;
+    float busvoltage;
+    float current_mA;
+    float loadvoltage;
+    float power_mW;
+} ina226_report_t;
+
+
+typedef struct {
     float temperature;
 } tmp117_report_t;
+
+typedef struct {
+    uint32_t lum;
+    uint16_t ir, full;
+    float lux;
+} tsl2591_report_t;
 
 // example how to extend the slowSensorReport type
 typedef struct {
@@ -290,7 +313,9 @@ typedef enum {
     TYPE_DPS3XX,
     TYPE_BMP3XX,
     TYPE_INA219,
+    TYPE_INA226,
     TYPE_TMP117,
+    TYPE_TSL2591,
     TYPE_GEIGER
 } slow_sensor_type_t;
 
@@ -301,22 +326,24 @@ typedef struct {
         baro_report_t baro;
         ina219_report_t ina219;
         tmp117_report_t tmp117;
+        tsl2591_report_t tsl2591;
         geiger_report_t geiger;
+        ina226_report_t ina226;
     };
 } slowSensorReport_t;
 
 typedef enum {
-    SENSOR_NONE        = 0,
-    SENSOR_RUUVI       = 3,
-    SENSOR_FLYTEC_TT34 = 4,
-    SENSOR_TE5600      = 5,
-    SENSOR_MOPEKA      = 6,
-    SENSOR_TRUMA       = 7,
-    SENSOR_HRM         = 8,  // heart rate monitor
-    SENSOR_TPMS1       = 9,
-    SENSOR_TPMS2       = 10,
-    SENSOR_FLOWSENSOR  = 11,
-    SENSOR_MIB_SCALE   = 12,
+    SENSOR_NONE         = 0,
+    SENSOR_RUUVI        = 3,
+    SENSOR_FLYTEC_TT34  = 4,
+    SENSOR_TE5600       = 5,
+    SENSOR_MOPEKA       = 6,
+    SENSOR_TRUMA        = 7,
+    SENSOR_HRM          = 8,  // heart rate monitor
+    SENSOR_TPMS1        = 9,
+    SENSOR_TPMS2        = 10,
+    SENSOR_FLOWSENSOR   = 11,
+    SENSOR_MIB_SCALE    = 12,
     SENSOR_LIDL_BATTERY = 13
 } sensor_type_t;
 
@@ -355,7 +382,7 @@ typedef enum {
     BT_BATTERY3 = 72,
     BT_BATTERY4 = 73,
     BT_BATTERY5 = 74,
-    
+
 } ble_sensor_usage_t;
 
 // config per BLE sensor
@@ -725,7 +752,9 @@ extern Adafruit_BMP3XX *bmp;
 extern Adafruit_LPS22 *lps;
 extern Adafruit_DPS310 *dps3xx;
 extern Adafruit_INA219 *ina219;
+extern INA226 *ina226;
 extern Adafruit_TMP117 *tmp117;
+extern Adafruit_TSL2591 *tsl2591;
 
 extern Adafruit_Sensor *lps2x_pressure;
 extern Adafruit_Sensor *dps3xx_pressure;
