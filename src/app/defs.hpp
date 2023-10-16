@@ -339,7 +339,9 @@ typedef enum {
     SENSOR_TPMS2        = 10,
     SENSOR_FLOWSENSOR   = 11,
     SENSOR_MIB_SCALE    = 12,
-    SENSOR_LIDL_BATTERY = 13
+    SENSOR_LIDL_BATTERY = 13,
+    SENSOR_BM2_BATTERY = 14,
+    
 } sensor_type_t;
 
 typedef enum {
@@ -377,6 +379,11 @@ typedef enum {
     BT_BATTERY3 = 72,
     BT_BATTERY4 = 73,
     BT_BATTERY5 = 74,
+
+    BT_BM2_1 = 80,
+    BT_BM2_2 = 81,
+    BT_BM2_3 = 82,
+    
 
 } ble_sensor_usage_t;
 

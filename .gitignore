@@ -54,3 +54,6 @@ notes.txt
 retired/
 logs/
 sdkconfig*.old
+squareline-ui/autosave
+squareline-ui/backup
+
