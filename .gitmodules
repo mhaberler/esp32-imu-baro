@@ -88,12 +88,6 @@
 [submodule "lib/NimBLE-Arduino"]
 	path = lib/NimBLE-Arduino
 	url = https://github.com/mhaberler/NimBLE-Arduino.git
-[submodule "lib/fmtlib"]
-	path = lib/fmtlib
-	url = https://github.com/mhaberler/fmtlib.git
-[submodule "lib/spdlog"]
-	path = lib/spdlog
-	url = https://github.com/BalloonWare/spdlog.git
 [submodule "lib/AsyncTCP"]
 	path = lib/AsyncTCP
 	url = https://github.com/BalloonWare/AsyncTCP.git
