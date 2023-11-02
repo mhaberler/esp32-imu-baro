@@ -1,5 +1,5 @@
 #include "TimerStats.h"
-#include "custom.hpp"
+#include "../custom-example/custom.hpp"
 #include "defs.hpp"
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h>
 
@@ -42,15 +42,18 @@ void reporter(config_t &config, options_t &opt) {
     digitalWrite(REPORT_PIN, HIGH);
 #endif
 
-    //   if (!triple_buffer.newSnap()) { // anything to do?
-    // #ifdef REPORT_PIN
-    //     digitalWrite(REPORT_PIN, LOW);
-    // #endif
-    //     return;
-    //   }
+//   if (!triple_buffer.newSnap()) { // anything to do?
+// #ifdef REPORT_PIN
+//     digitalWrite(REPORT_PIN, LOW);
+// #endif
+//     return;
+//   }
+#ifdef MOTIONCAL
+
     if (motion_cal) {
         return;
     }
+#endif
     bool newSnap             = triple_buffer.newSnap();
     const sensor_state_t &ss = triple_buffer.getReadRef();
 
@@ -67,7 +70,7 @@ void reporter(config_t &config, options_t &opt) {
         if (options.teleplot_viewer) {
             if (options.report_raw) {
                 // https://github.com/nesnes/teleplot/blob/main/clients/MPU6050_HID_tests/MPU6050_HID_tests.ino
-
+#ifdef TELEPLOT
                 teleplot.update_ms("a.x", its, ss.final_accel.acceleration.x,
                                    ms2, TELEPLOT_FLAG_NOPLOT);
                 teleplot.update_ms("a.y", its, ss.final_accel.acceleration.y,
@@ -90,8 +93,11 @@ void reporter(config_t &config, options_t &opt) {
                     teleplot.update_ms("m.z", its, ss.final_mag.magnetic.z, uT,
                                        TELEPLOT_FLAG_NOPLOT);
                 }
+#endif
             }
             if (options.report_hpr) {
+#ifdef TELEPLOT
+
                 teleplot.update_ms("pose.roll", its, ss.roll, deg,
                                    TELEPLOT_FLAG_NOPLOT);
                 teleplot.update_ms("pose.pitch", its, ss.pitch, deg,
@@ -106,14 +112,18 @@ void reporter(config_t &config, options_t &opt) {
                         .setCubeProperties(2.5, 1.5, 0.5)
                         .setRot(ss.qx, ss.qy, ss.qz, ss.qw),
                     TELEPLOT_FLAG_NOPLOT);
+#endif
             }
             if (options.report_grav) {
+#ifdef TELEPLOT
+
                 teleplot.update_ms("grav.x", its, ss.gravx, deg,
                                    TELEPLOT_FLAG_NOPLOT);
                 teleplot.update_ms("grav.y", its, ss.gravy, deg,
                                    TELEPLOT_FLAG_NOPLOT);
                 teleplot.update_ms("grav.z", its, ss.gravz, deg,
                                    TELEPLOT_FLAG_NOPLOT);
+#endif
             }
         }
         if (options.ndjson) {
@@ -178,6 +188,8 @@ void reporter(config_t &config, options_t &opt) {
         if ((track_flowcount != report.count) ||
             (track_flowing != report.flowing)) {
             if (options.teleplot_viewer) {
+#ifdef TELEPLOT
+
                 if (track_flowing != report.flowing) {
                     // insert fake report for nice edge
                     teleplot.update_ms("flowDetected", report.timestamp - 1,
@@ -193,6 +205,7 @@ void reporter(config_t &config, options_t &opt) {
                 teleplot.update_ms("flowBounces", report.timestamp,
                                    report.bounces, counter_,
                                    TELEPLOT_FLAG_NOPLOT);
+#endif
             }
             if (options.ndjson) {
                 JsonObject j = doc.createNestedObject("flow");
@@ -214,23 +227,26 @@ void reporter(config_t &config, options_t &opt) {
         static bool track_flowing       = false;
         if ((track_flowcount != report.count) ||
             (track_flowing != report.changed)) {
+#ifdef TELEPLOT
+
             if (options.teleplot_viewer) {
                 if (track_flowing != report.changed) {
                     // insert fake report for nice edge
-                    teleplot.update_ms("flowDetected", report.last_change/1000 - 1,
-                                       (int)(!report.changed), bool_,
-                                       TELEPLOT_FLAG_NOPLOT);
+                    teleplot.update_ms(
+                        "flowDetected", report.last_change / 1000 - 1,
+                        (int)(!report.changed), bool_, TELEPLOT_FLAG_NOPLOT);
                 }
-                teleplot.update_ms("flowDetected", report.last_change/1000,
+                teleplot.update_ms("flowDetected", report.last_change / 1000,
                                    (int)report.changed, bool_,
                                    TELEPLOT_FLAG_NOPLOT);
-                teleplot.update_ms("flowCounter", report.last_change/1000,
+                teleplot.update_ms("flowCounter", report.last_change / 1000,
                                    report.count, counter_,
                                    TELEPLOT_FLAG_NOPLOT);
             }
+#endif
             if (options.ndjson) {
                 JsonObject j = doc.createNestedObject("flow");
-                j["t"]       = report.last_change/1000;
+                j["t"]       = report.last_change / 1000;
                 j["count"]   = report.count;
                 j["changed"] = report.changed;
                 emitJson(config, options, doc);
@@ -249,23 +265,51 @@ void reporter(config_t &config, options_t &opt) {
                     case TYPE_LPS22:
                     case TYPE_DPS3XX:
                     case TYPE_BMP3XX:
+
+#ifdef TELEPLOT
+
                         teleplot.update_ms(dev + ".hpa", bp.timestamp,
                                            bp.baro.hpa, hpascal,
                                            TELEPLOT_FLAG_NOPLOT);
                         teleplot.update_ms(dev + ".alt", bp.timestamp,
                                            bp.baro.alt, meter,
                                            TELEPLOT_FLAG_NOPLOT);
+#endif
                         break;
                     case TYPE_INA219:
+#ifdef TELEPLOT
+
                         teleplot.update_ms(dev + ".current", bp.timestamp,
                                            bp.ina219.current_mA, mA,
                                            TELEPLOT_FLAG_NOPLOT);
+#endif
+                        break;
+                    case TYPE_INA226:
+#ifdef TELEPLOT
+
+                        teleplot.update_ms(dev + ".current", bp.timestamp,
+                                           bp.ina226.current_mA, mA,
+                                           TELEPLOT_FLAG_NOPLOT);
+#endif
                         break;
                     case TYPE_TMP117:
+#ifdef TELEPLOT
+
                         teleplot.update_ms(dev + ".temperature", bp.timestamp,
                                            bp.tmp117.temperature, deg,
                                            TELEPLOT_FLAG_NOPLOT);
+#endif
                         break;
+                    case TYPE_TSL2591:
+#ifdef TELEPLOT
+
+                        teleplot.update_ms(dev + ".infrared", bp.timestamp,
+                                           bp.tsl2591.ir, deg,
+                                           TELEPLOT_FLAG_NOPLOT);
+                        teleplot.update_ms(dev + ".full", bp.timestamp,
+                                           bp.tsl2591.full, deg,
+                                           TELEPLOT_FLAG_NOPLOT);
+#endif
                     default:
                         break;
                 }
@@ -285,11 +329,20 @@ void reporter(config_t &config, options_t &opt) {
                             j["shuntvoltage"] = bp.ina219.shuntvoltage;
                             j["busvoltage"]   = bp.ina219.busvoltage;
                             j["current_mA"]   = bp.ina219.current_mA;
-                            j["loadvoltage"]  = bp.ina219.loadvoltage;
                             j["power_mW"]     = bp.ina219.power_mW;
+                            break;
+                        case TYPE_INA226:
+                            j["shuntvoltage"] = bp.ina226.shuntvoltage;
+                            j["busvoltage"]   = bp.ina226.busvoltage;
+                            j["current_mA"]   = bp.ina226.current_mA;
+                            j["power_mW"]     = bp.ina226.power_mW;
                             break;
                         case TYPE_TMP117:
                             j["temperature"] = bp.tmp117.temperature;
+                            break;
+                        case TYPE_TSL2591:
+                            j["infrared"] = bp.tsl2591.ir;
+                            j["full"]     = bp.tsl2591.full;
                             break;
                         default:
                             break;
@@ -307,9 +360,12 @@ void reporter(config_t &config, options_t &opt) {
             if (true) {
                 if (GPSFIX3D(serialGps) && serialGps.altitude.isUpdated()) {
                     if (options.teleplot_viewer) {
+#ifdef TELEPLOT
+
                         teleplot.update_ms("serialGps.alt", its,
                                            serialGps.altitude.meters(), meter,
                                            TELEPLOT_FLAG_NOPLOT);
+#endif
                     }
                     if (options.ndjson) {
                         JsonObject j = doc.createNestedObject("serialGps");
@@ -377,21 +433,20 @@ void reporter(config_t &config, options_t &opt) {
 static void emitJson(const config_t &config, options_t &opt, jdoc_t &doc) {
     if (!doc.isNull()) {
         if (!options.ndjson) {
-            if (config.log_open) {
-                // serializeJsonPretty(doc, bufferedLogger);
-                // bufferedLogger.print("\n");
-            } else {
-                serializeJsonPretty(doc, Console);
-                Console.print("\n");
+            if (config.log_open && bufferedLogger) {
+                serializeJsonPretty(doc, *bufferedLogger);
+                bufferedLogger->print("\n");
             }
+            serializeJsonPretty(doc, Console);
+            Console.print("\n");
+
         } else {
-            if (config.log_open) {
-                // serializeJson(doc, bufferedLogger);
-                // bufferedLogger.print("\n");
-            } else {
-                serializeJson(doc, Console);
-                Console.print("\n");
+            if (config.log_open&& bufferedLogger) {
+                serializeJson(doc, *bufferedLogger);
+                bufferedLogger->print("\n");
             }
+            serializeJson(doc, Console);
+            Console.print("\n");
         }
         doc.clear();
     }
@@ -400,6 +455,8 @@ static void emitJson(const config_t &config, options_t &opt, jdoc_t &doc) {
 static void emitStats(config_t &config, options_t &opt, jdoc_t &doc) {
     if (opt.timing_stats) {
         if (opt.teleplot_viewer) {
+#ifdef TELEPLOT
+
             teleplot.update_ms("handleImu.mean", millis(), imuStats.Mean(), uS,
                                TELEPLOT_FLAG_NOPLOT);
             teleplot.update_ms("reporter.mean", millis(), reporterStats.Mean(),
@@ -412,6 +469,7 @@ static void emitStats(config_t &config, options_t &opt, jdoc_t &doc) {
             teleplot.update_ms("slowSensor.mean", millis(),
                                slowSensorStats.Mean(), uS,
                                TELEPLOT_FLAG_NOPLOT);
+#endif
         }
         if (options.ndjson) {
             JsonObject m             = doc.createNestedObject("timing");
@@ -442,6 +500,8 @@ static void emitStats(config_t &config, options_t &opt, jdoc_t &doc) {
         uint32_t freeHeap = ESP.getFreeHeap();
 
         if (opt.teleplot_viewer) {
+#ifdef TELEPLOT
+
             teleplot.update_ms("reporterStack", millis(),
                                config.reporter_stack_util, percent_,
                                TELEPLOT_FLAG_NOPLOT);
@@ -450,6 +510,7 @@ static void emitStats(config_t &config, options_t &opt, jdoc_t &doc) {
                                TELEPLOT_FLAG_NOPLOT);
             teleplot.update_ms("freeHeap", millis(), freeHeap, bytes_,
                                TELEPLOT_FLAG_NOPLOT);
+#endif
         }
         if (options.ndjson) {
             JsonObject m       = doc.createNestedObject("memory");

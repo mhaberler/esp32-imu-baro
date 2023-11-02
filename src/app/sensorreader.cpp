@@ -1,7 +1,8 @@
 #include "FlowSensor.hpp"
 #include "TimerStats.h"
-#include "custom.hpp"
+#include "../custom-example/custom.hpp"
 #include "defs.hpp"
+#include "lv_setup.h"
 
 static sensor_state_t initTB = {
     .final_accel = {.type = SENSOR_TYPE_ACCELEROMETER},
@@ -189,15 +190,15 @@ void handleSensors(void) {
             break;
     }
 
-    // #ifdef IMU_PIN
-    //   TOGGLE(IMU_PIN);
-    // #endif
-
+        // #ifdef IMU_PIN
+        //   TOGGLE(IMU_PIN);
+        // #endif
+#ifdef MOTIONCAL
     if (motion_cal) {
         MotionCal(state, options, config);
         return;
     }
-
+#endif
     if (config.gcal_samples == 0) {
         // true once GYRO_SAMPLES have been taken
         // so we're done
@@ -307,6 +308,7 @@ void handleSensors(void) {
 #ifdef EXTRA_PIN
     TOGGLE(EXTRA_PIN);
 #endif
+    lv_handler();
     if (run_sensors) {
         sequence++;
         switch (sequence) {
@@ -373,13 +375,23 @@ void handleSensors(void) {
                     slow.ina219.busvoltage   = ina219->getBusVoltage_V();
                     slow.ina219.shuntvoltage = ina219->getShuntVoltage_mV();
                     slow.ina219.current_mA   = ina219->getCurrent_mA();
-                    slow.ina219.loadvoltage  = ina219->getBusVoltage_V();
                     slow.ina219.power_mW     = ina219->getPower_mW();
                     slow.typus               = TYPE_INA219;
                     slow.timestamp           = abs_timestamp(config);
-
                     slowSensors.Enqueue(&slow);
                 }
+                if (config.dev[I2C_INA226]) {
+                    slowSensorReport_t slow;
+
+                    slow.ina226.busvoltage   = ina226->getBusVoltage();
+                    slow.ina226.shuntvoltage = ina226->getShuntVoltage_mV();
+                    slow.ina226.current_mA   = ina226->getCurrent_mA();
+                    slow.ina226.power_mW     = ina226->getPower_mW();
+                    slow.typus               = TYPE_INA226;
+                    slow.timestamp           = abs_timestamp(config);
+                    slowSensors.Enqueue(&slow);
+                }
+
                 break;
 
             case 4:
@@ -407,6 +419,20 @@ void handleSensors(void) {
                     TOGGLE(UBLOX_PIN);
 #endif
 #endif
+                }
+                break;
+            case 6:
+                if (config.dev[I2C_TSL2591]) {
+                    slowSensorReport_t slow;
+
+                    slow.typus        = TYPE_TSL2591;
+                    slow.timestamp    = abs_timestamp(config);
+                    slow.tsl2591.lum  = tsl2591->getFullLuminosity();
+                    slow.tsl2591.ir   = slow.tsl2591.lum >> 16;
+                    slow.tsl2591.full = slow.tsl2591.lum & 0xFFFF;
+                    slow.tsl2591.lux  = tsl2591->calculateLux(slow.tsl2591.full,
+                                                              slow.tsl2591.ir);
+                    slowSensors.Enqueue(&slow);
                 }
                 break;
             default:

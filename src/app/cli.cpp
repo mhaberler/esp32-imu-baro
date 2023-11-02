@@ -1,5 +1,5 @@
 
-#include "custom.hpp"
+#include "../custom-example/custom.hpp"
 #include "defs.hpp"
 #include <ESPmDNS.h>
 #include <WiFi.h>
@@ -18,8 +18,8 @@ extern options_t options;
 extern config_t config;
 
 // remain in sync with slow_sensor_type_t
-const char *sensor_types[] = {"none",   "lps22",  "dps3xx", "bmp3xx",
-                              "ina219", "tmp117", "geiger", "<max>"};
+const char *sensor_types[] = {"none",   "lps22",  "dps3xx",  "bmp3xx", "ina219",
+                              "ina226", "tmp117", "tsl2591", "geiger", "<max>"};
 
 static int num_services = -1;
 extern MDNSResponder MDNS;
@@ -446,7 +446,9 @@ void initShell(void) {
                 Console.fmtln("format:  sd [<service> [<proto>]]");
                 return;
         }
+#ifdef WIFI
         num_services = browseService(service, proto);
+#endif
     });
 
     cmdCallback.addCmd("SS", [](CmdParser *cp) {
@@ -633,10 +635,12 @@ void initShell(void) {
                                 ? "applying calibration"
                                 : "reporting uncalibrated values");
     });
+#ifdef MOTIONCAL
     cmdCallback.addCmd("MCAL", [](CmdParser *cp) {
         motion_cal = true;
         Console.fmtln("Starting MotionCal mode");
     });
+#endif
     cmdCallback.addCmd("GCAL", [](CmdParser *cp) {
         config.gcal_samples = GYRO_SAMPLES;
         Console.fmtln("starting gyro calibration, {} samples..",

@@ -74,7 +74,7 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client,
   AwsFrameInfo *info;
   client_t *ci;
   DeserializationError error;
-  int n;
+  int n = 0;
 
   switch (type) {
   case WS_EVT_DISCONNECT:

@@ -200,16 +200,103 @@ reboot
 
 ## Build
 
+### fresh install in a new repo
 ````
-git clone  https://github.com/mhaberler/esp32-imu-baro.git
+git clone  --recursive https://github.com/mhaberler/esp32-imu-baro.git
 cd esp32-imu-baro/
+git checkout -b test origin/rev-0.9-esp-idf-arduino
+git submodule sync --recursive
 git submodule update --init --recursive
+````
+- Open folder `esp32-imu-baro` in VSCode 
+- Choose target custom_demo_m5stack_coreS3_jtag
+- build and upload
+
+### update an existing repo
+````
+git remote add github-mah https://github.com/mhaberler/esp32-imu-baro.git
+git fetch  github-mah 
+git checkout -b test github-mah/rev-0.9-esp-idf-arduino
+cd esp32-imu-baro/
+git submodule sync --recursive
+git submodule update --init --recursive
+````
+
+## JTAG Debugging
+
+#### MacOS 
+No further software prerequisites needed.
+
+- download to the targ
+- connect console
+- to debug: Debug->Pio Debug (without uploading)
+- program should break in app_main()
+
+#### Linux
+
+If you are blessed with an old version of Linux - hang on to it until espressif gets around to updating their toolchains to postwar status - the gdb of the working toolchain needs the Python2.7 shared libraries (nevermind Python 2.7 is deprecated since January 1, 2020):
 
 ````
-Choose target and build.
+(penv) mah@mbux:~/.platformio/packages/toolchain-xtensa-esp32s3/bin$ ldd xtensa-esp32s3-elf-gdb
+        linux-vdso.so.1 (0x00007ffc29df5000)
+        libdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007facb58d0000)
+        libpython2.7.so.1.0 => /usr/local/lib/libpython2.7.so.1.0 (0x00007facb56d3000)  <---------------
+        libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007facb56ce000)
+        libutil.so.1 => /lib/x86_64-linux-gnu/libutil.so.1 (0x00007facb56c9000)
+        libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007facb55ea000)
+        libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007facb5200000)
+        libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007facb55c8000)
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007facb501f000)
+        /lib64/ld-linux-x86-64.so.2 (0x00007facb58f4000)
+````
+
+I spent days trying to work around this as debian bookworm which does not support Python2 anymore. 
+
+If you are unsure, try this:
+
+- locate the xtensa esp32s3 toolchain - likely found in `~/.platformio/packages/toolchain-xtensa-esp32s3/bin`
+
+- run the gdb debugger therein, if it comes up like so you're good:
+
+````
+(penv) mah@mbux:~/.platformio/packages/toolchain-xtensa-esp32s3/bin$ ./xtensa-esp32s3-elf-gdb
+GNU gdb (crosstool-NG esp-2021r2-patch5) 9.2.90.20200913-git
+Copyright (C) 2020 Free Software Foundation, Inc.
+....
+Type "apropos word" to search for commands related to "word".
+(gdb) 
+````
+
+-  if it comes up like so, you need to find a Python2.7 package, or rebuild from source (as I did, as I didnt find a reasonable debian bookworm python2.7 package):
+````
+(penv) mah@mbux:~/.platformio/packages/toolchain-xtensa-esp32s3/bin$ ./xtensa-esp32s3-elf-gdb
+./xtensa-esp32s3-elf-gdb: error while loading shared libraries: libpython2.7.so.1.0: cannot open shared object file: No such file or directory
+````
+
+The only working solution I found was manually building Python2.7 with shared libraries to make the extensa gdb happy. The idea is to use an 'altinstall' target so as not to interfere with other Python installations:
+
+I used these steps:
+
+`````
+  wget https://www.python.org/ftp/python/2.7.18/Python-2.7.18.tar.xz
+  tar -xJf  Python-2.7.18.tar.xz 
+  cd Python-2.7.18/
+  ./configure --enable-optimizations --enable-shared --enable-unicode=ucs4
+  sudo make -j 4 altinstall
+  sudo ldconfig
+`````
+Thereafter, JTAG debugging works fine in VSCode/Platformio.
+
+
+## Windows 1x
+
+I've given up on Windows.
+
+
 
 ## plans:
 - add calibration
+- add proper logging
 
 ## supported baro sensors: LPS22, DPS310, DPS36x,BMP3xx
 

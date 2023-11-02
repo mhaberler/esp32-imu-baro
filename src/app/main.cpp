@@ -2,8 +2,9 @@
 #include "FlowSensor.hpp"
 #include "Ticker.h"
 #include "TimerStats.h"
-#include "custom.hpp"
+#include "../custom-example/custom.hpp"
 #include "defs.hpp"
+#include "sdcard.hpp"
 #ifdef TREEWALKER
 #include "fsVisitor.hpp"
 #endif
@@ -16,6 +17,10 @@
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h>
 #include <WebSerial.h>
 #include "esp_ota_ops.h"
+#include "lv_setup.h"
+#if defined(LVGL_UI)
+#include "ui/ui.h"
+#endif
 
 Adafruit_FXOS8700 *fxos;
 Adafruit_FXAS21002C *fxas;
@@ -39,6 +44,8 @@ Adafruit_MPU6050 *mpu6050;
 MPU9250_DMP *mpu9250_dmp;
 Adafruit_MPU6886 *mpu6886;
 Adafruit_INA219 *ina219;
+Adafruit_TSL2591 *tsl2591;
+INA226 *ina226;
 Adafruit_TMP117 *tmp117;
 
 
@@ -91,13 +98,8 @@ const char *percent_ = "%";
 
 void background(void);
 
-SdFat sdfat;
-SdBaseFile file;
-
-void describeCard(SdFat &sd);
-bool handleSD(const bool cardPresent, SdFat &sdfat, options_t &opt);
-
 // WriteBufferingStream bufferedLogger(config.log_fd, LOG_BUF);
+WriteBufferingStream *bufferedLogger;
 
 WriteBufferingStream bufferedWebSerialOut(WebSerial, WS_BUF);
 Stream *streams[2] = {&Serial, &bufferedWebSerialOut};
@@ -116,7 +118,6 @@ extern DNSServer dnsServer;
 
 static volatile bool run_flush, run_logflush;
 bool run_dns;
-bool listDir(const char *dir);
 void handle_deferred(void);
 
 void printSensorsDetected(options_t &options, config_t &config) {
@@ -171,152 +172,9 @@ bool init_globals(void) {
     return true;
 }
 
-void read_partitions(void) {
-    // bool EspClass::flashRead(uint32_t offset, uint32_t *data, size_t
-    // size)
-    //   ESP.flashRead
-    LOGD("ESP32 Partition table:");
-
-    LOGD("| Type | Sub |  Offset  |   Size   |       Label      |");
-    LOGD("| ---- | --- | -------- | -------- | ---------------- |");
-
-    esp_partition_iterator_t pi = esp_partition_find(
-        ESP_PARTITION_TYPE_ANY, ESP_PARTITION_SUBTYPE_ANY, NULL);
-    if (pi != NULL) {
-        do {
-            const esp_partition_t *p = esp_partition_get(pi);
-            LOGD("| {:>{}x} | {:>{}x} | {:>{}x} | {:>{}x} | {:<16} |",
-                 (int)p->type, 4, (int)p->subtype, 3, p->address, 8, p->size, 8,
-                 (char *)p->label);
-        } while ((pi = (esp_partition_next(pi))));
-    }
-}
-
 void describe_running_partition(void) {
     const esp_partition_t *running = esp_ota_get_running_partition();
     LOGD("app has started from {:>{}x}", running->address, 4);
-}
-
-void IRAM_ATTR cardInsertISR(void) {
-    // portENTER_CRITICAL_ISR(&mux);
-    // numCdInterrupts++;
-    // cdLastState = digitalRead(CARD_DETECT_PIN);
-    // cdDebounceTimeout =
-    //     xTaskGetTickCount(); // version of millis() that works from interrupt
-    // portEXIT_CRITICAL_ISR(&mux);
-}
-
-void describeCard(SdFat &sd) {
-    LOGD("SdFat version: {}", SD_FAT_VERSION_STR);
-    LOGD("card size: {:.0f} GB", sd.card()->sectorCount() * 512E-9);
-    switch (sd.fatType()) {
-        case FAT_TYPE_EXFAT:
-            LOGD("FS type: exFat");
-            break;
-        case FAT_TYPE_FAT32:
-            LOGD("FS type: FAT32");
-            break;
-        case FAT_TYPE_FAT16:
-            LOGD("FS type: FAT16");
-            break;
-        case FAT_TYPE_FAT12:
-            LOGD("FS type: FAT12");
-            break;
-    }
-    cid_t cid;
-    if (!sd.card()->readCID(&cid)) {
-        LOGE("readCID failed");
-        return;
-    }
-    LOGD("Manufacturer ID: 0x{:x}", int(cid.mid));
-    LOGD("OEM ID: 0x{:x} 0x{:x}", cid.oid[0], cid.oid[1]);
-    LOGD("Product: '{}'", fmt::string_view(cid.pnm, sizeof(cid.pnm)));
-    LOGD("Revision: {}.{}", cid.prvN(), cid.prvM());
-    LOGD("Serial number: {}", cid.psn());
-    LOGD("Manufacturing date: {}/{}", cid.mdtMonth(), cid.mdtYear());
-}
-
-bool handleSD(const bool cardPresent, SdFat &sdfat, options_t &opt) {
-    uint32_t start = millis();
-    LOGD("handleSD sdCspin={} freq={}", opt.sd_cs_pin, opt.sd_freq_kHz);
-
-    if (cardPresent) {
-        while (1) {
-            bool success = sdfat.begin(SdSpiConfig(
-                opt.sd_cs_pin, SHARED_SPI, SD_SCK_KHZ(opt.sd_freq_kHz)));
-            if (success) {
-                LOGD("SD mounted.");
-                describeCard(sdfat);
-                return true;
-            }
-            delay(500);
-            if ((millis() - start) > SD_WAIT_MS) {
-                LOGD("giving up on SD.");
-                return false;
-            }
-            LOGD("SD waiting... {}", (millis() - start) / 1000.0);
-        }
-    } else {
-        return false;
-    }
-}
-
-bool init_sd(options_t &opt, config_t &config) {
-    if (opt.sd_cs_pin < 0) {
-        LOGI("SD support disabled via config (sd_cs_pin < 0).");
-        return false;
-    }
-
-    if (options.sd_card_detect_pin > -1) {
-        // Adafruit SD card breakout: this pin shorts to ground if NO card is
-        // inserted
-        pinMode(options.sd_card_detect_pin, INPUT_PULLUP);
-        attachInterrupt(digitalPinToInterrupt(options.sd_card_detect_pin),
-                        cardInsertISR, CHANGE);
-        LOGD("attaching card detect IRQ on pin {}, current state: {}",
-             options.sd_card_detect_pin,
-             digitalRead(options.sd_card_detect_pin));
-    }
-    // if the default SPI has not been initialized (eg by initing a display)
-    // do so now
-    //
-    // for pins, see
-    // https://github.com/espressif/esp-idf/blob/master/examples/storage/sd_card/sdspi/README.md#pin-assignments
-    // assume SPI 0 for SD
-    spi_cfg_t *sc = &options.spi_cfg[0];
-    if (sc->miso > -1) {
-        SPI.begin(sc->sck, sc->miso, sc->mosi);
-    }
-    config.sd_mounted = handleSD(true, sdfat, opt);
-    if (config.sd_mounted) {
-        config.sdfat_healthy = true;
-
-        LOGD("SD mounted, toplevel directory:");
-        listDir("/");
-#ifdef TREEWALKER
-        LOGD("fsVisitor:");
-        fsVisitor(sdfat, Console, "/", VA_PRINT);
-#endif
-    }
-    return true;
-}
-
-bool sd_openlog(const options_t &opt, config_t &config) {
-    if (config.sdfat_healthy) {
-        if (!sdfat.exists(LOG_SUBDIR)) {
-            sdfat.mkdir(LOG_SUBDIR);
-        }
-        strcpy(config.log_path,
-               fmt::format("{}/log_{:06}.njs", LOG_SUBDIR, config.boot_count)
-                   .c_str());
-
-        config.log_fd = sdfat.open(config.log_path, O_WRONLY | O_CREAT);
-        LOGD("openend SD: '{}' for logging/w: {}", config.log_path,
-             T2OK(config.log_fd.isOpen()));
-
-        return config.log_fd.isOpen();
-    }
-    return false;
 }
 
 bool init_littlefs(options_t &opt, config_t &config) {
@@ -368,9 +226,9 @@ bool init_calibration(options_t &opt, config_t &config) {
 
 void setup(void) {
 
-#ifdef STARTUP_DELAY
-    delay(STARTUP_DELAY); // let USB settle
-#endif
+// #ifdef STARTUP_DELAY
+//     delay(STARTUP_DELAY);  // let USB settle
+// #endif
 
 #ifdef M5UNIFIED
     auto cfg            = M5.config();
@@ -387,19 +245,19 @@ void setup(void) {
 #endif
 
     /* Wait for the Serial Monitor */
-    while (!Serial) {
-        yield();
-    }
+    // while (!Serial) {
+    //     yield();
+    // }
 
     setup_syslog();
     set_syslog_loglevel(1);
     init_globals();
-    read_partitions();
     describe_running_partition();
     flushBuffers();
 
     // click power button twice during boot to wipe config
-    if (M5.BtnPWR.wasClicked() && (M5.BtnPWR.getClickCount() >= MIN_CLICKS_FOR_WIPE)) {
+    if (M5.BtnPWR.wasClicked() &&
+        (M5.BtnPWR.getClickCount() >= MIN_CLICKS_FOR_WIPE)) {
         Serial.printf("power button clicked - resetting to default config:\n");
         wipePrefs();
         ESP.restart();
@@ -409,6 +267,10 @@ void setup(void) {
         wipePrefs();
         ESP.restart();
     }
+    lv_begin();
+#if defined(LVGL_UI)
+    ui_init();
+#endif
 
     bool cfg_read = readPrefs(options);
     if (!cfg_read) {
@@ -487,7 +349,6 @@ void setup(void) {
     platform_report();
     psram_report(__FILE__, __LINE__);
     build_setup_report();
-    heap_report(__FILE__, __LINE__);
 
     init_timingpins();
 
@@ -499,7 +360,6 @@ void setup(void) {
     if (init_calibration(options, config)) {
         printCurrentCalibration(options, config);
     }
-
     flushBuffers();
     initOtherSensors(options, config);
     flushBuffers();
@@ -523,7 +383,6 @@ void setup(void) {
     customInitCode(config, options);
     flushBuffers();
     initShell();
-
     flushBuffers();
 
 #ifdef WIFI
@@ -551,7 +410,7 @@ void setup(void) {
     sensorTask->setRate(1000.0 / options.imu_rate);
     if (!sensorTask->Start(options.sensor_core)) {
         LOGE("failed to start sensor task!");
-        heap_report(NULL, 0);
+        heap_report(__FILE__, __LINE__);
     }
 
     setStatsRate(0.2);
@@ -572,6 +431,7 @@ void setup(void) {
     }
 #endif
     task_report(__FILE__, __LINE__, 2, "sensor", "reporter", NULL);
+    heap_report(__FILE__, __LINE__);
 
 #ifdef TEST_LOG
     teleplot.log("startup");
@@ -587,8 +447,9 @@ void background(void) {
 #endif
 
     // FIXME wsclients cleanup!!
-
+#ifdef WIFI
     if (run_dns) dnsServer.processNextRequest();
+#endif
 #ifdef WEBSERVER
     handle_deferred();
 #endif
@@ -611,17 +472,20 @@ void background(void) {
         }
     }
 #endif
-    if (run_logflush) {
-        // bufferedLogger.flush();
+    if (run_logflush && bufferedLogger) {
+        bufferedLogger->flush();
         run_logflush = false;
     }
     // click power button twice during boot to wipe config
     // M5.update();
-    // if (M5.BtnPWR.wasClicked() && (M5.BtnPWR.getClickCount() >= MIN_CLICKS_FOR_WIPE)) {
+    // if (M5.BtnPWR.wasClicked() && (M5.BtnPWR.getClickCount() >=
+    // MIN_CLICKS_FOR_WIPE)) {
     //     Serial.printf("resetting to default config:\n");
     //     wipePrefs();
     //     ESP.restart();
     // }
+
+    // lv_handler();
 
 #ifdef BACKGROUND_PIN
     digitalWrite(BACKGROUND_PIN, LOW);
