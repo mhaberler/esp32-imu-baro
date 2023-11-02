@@ -456,8 +456,8 @@ void setup(void) {
     i2c_cfg_t *ip = &options.i2c_cfg[0];
     if (ip->kHz > 0) {
         LOGD("In_I2C/Wire params: sda={} scl={} speed={} port={}", ip->sda,
-             ip->scl, ip->kHz, M5.In_I2C.getPort());
-        M5.In_I2C.begin(0, ip->sda, ip->scl);
+             ip->scl, ip->kHz,  (int)  M5.In_I2C.getPort());
+        M5.In_I2C.begin((i2c_port_t)0, ip->sda, ip->scl);
 
         if (M5.In_I2C.getPort()) {
             config.i2c_avail[0] =
@@ -472,8 +472,8 @@ void setup(void) {
     ip = &options.i2c_cfg[1];
     if (ip->kHz > 0) {
         LOGD("Ex_I2C/Wire1 params: sda={} scl={} speed={} port={}", ip->sda,
-             ip->scl, ip->kHz, M5.Ex_I2C.getPort());
-        M5.Ex_I2C.begin(1, ip->sda, ip->scl);
+             ip->scl, ip->kHz, (int) M5.Ex_I2C.getPort());
+        M5.Ex_I2C.begin((i2c_port_t)1, ip->sda, ip->scl);
         if (M5.Ex_I2C.getPort()) {
             config.i2c_avail[1] =
                 Wire1.begin(ip->sda, ip->scl, ip->kHz * 10000);

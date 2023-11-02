@@ -133,8 +133,8 @@ class ScanCallbacks : public NimBLEScanCallbacks {
 };
 
 void setupBLE(options_t &opt, config_t &config) {
-    NimBLEDevice::setScanFilterMode(CONFIG_BTDM_SCAN_DUPL_TYPE_DATA);
-    NimBLEDevice::setScanDuplicateCacheSize(200);
+    // NimBLEDevice::setScanFilterMode(CONFIG_BTDM_SCAN_DUPL_TYPE_DATA);
+    // NimBLEDevice::setScanDuplicateCacheSize(200);
     NimBLEDevice::init("");
     // NimBLEDevice::setPower(ESP_PWR_LVL_P9);
 

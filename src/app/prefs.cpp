@@ -31,6 +31,8 @@
 
 static Preferences prefs;
 
+#if 0
+
 // compiled-in defaults
 static options_t defaults = {
     .ahrs_algo       = ALGO_MAHONEY,
@@ -136,6 +138,114 @@ static options_t defaults = {
     .max_psram_for_cache_pct = MAX_PSRAM_FOR_CACHE_PCT,
     .watchdog                = -1.0,  // disabled for now
 
+};
+
+#endif
+static options_t defaults = {
+#if 0
+    {.ahrs_algo = ALGO_MAHONEY}
+
+    {.run_filter = AHRS_FILTER},
+    {.report_raw = REPORT_RAW},
+    {.report_hpr = REPORT_HPR},
+    {.report_quat = REPORT_QUAT},
+    {.report_baro = REPORT_BARO},
+    {.report_grav = REPORT_GRAV},
+    {.teleplot_viewer = TELEPLOT_VIEWER},
+    {.ndjson = NDJSON},
+    {.ned = NED_TRANSLATION},
+    {.timing_stats = REPORT_TIMING},
+    {.memory_usage = REPORT_MEMORY},
+    {.report_rate = REPORT_RATE},
+    {.imu_rate = IMU_RATE},
+    {.stats_rate = STATS_RATE},
+    {.ble_rate = BLE_RATE},
+    {.sensor_rate = SENSOR_RATE},
+    {.selected_imu = DEV_NONE},
+    {.which_baro = I2C_LPS22},
+    {.rotation = 0},
+
+    // single-pin FlowSensor
+    {.flowsensor_pin = FLOWSENSOR_PIN},
+
+    // dual-pin QuadratureDecoder
+
+    {.qs_pinA = QUADRATURE_DECODER_PINA},
+    {.qs_pinB = QUADRATURE_DECODER_PINB},
+    {.qs_step = QUADRATURE_STEP},
+    {.qs_tick = QUADRATURE_SAMPLE_TICK},
+    {.qs_changeDeltaT = QUADRATURE_CHANGE_DELTAT},
+    {.qs_inputMode = QUADRATURE_INPUT_MODE},
+    {.qs_edge = QUADRATURE_EDGE},
+
+    {.alpha = ALPHA},
+    {.num_ssid = 0},
+    {.hostname = HOSTNAME},
+    {.ap_ssid = {AP_SSID}},
+    {.ap_password = {AP_PASSWORD}},
+    {.ntp_poolname = NTP_POOL},
+
+    {.tpPort = -1},
+    {.gps_speed = SERIAL_GPS_SPEED},
+    {.gps_rx_pin = SERIAL_GPS_RXPIN},
+    {.gps_tx_pin = SERIAL_GPS_TXPIN},
+    {.log_level = 0},
+    {.trace = 0},
+    {.run_webserver = true},
+    {.webserver_port = 80},
+
+    {.run_webserial = true},
+    {.run_tpwebsocket = true},
+    {.littlefs_static_path = LFS_PATH},
+    {.websocket_path = WEBSOCKET_PATH},
+    {.consolesocket_path = CONSOLE_PATH},
+    {.web_default_path = INDEX_HTML},
+    {.web_user = WEB_USER},
+    {.web_pass = WEB_PASS},
+    {.flush_ms = FLUSH_PERIOD},
+    {.reporter_stack = REPORTERTASK_STACKSIZE},
+    {.sensor_stack = SENSORTASK_STACKSIZE},
+    {.ble_stack = BLETASK_STACKSIZE},
+    {.sensor_core = SENSORTASK_CORE},
+    {.reporter_core = REPORTERTASK_CORE},
+    {.ble_core = BLETASK_CORE},
+    {.sensor_prio = SENSORTASK_PRIORITY},
+    {.reporter_prio = REPORTERTASK_PRIORITY},
+    {.ble_prio = BLETASK_PRIORITY},
+
+    {.sd_wait_ms = SD_WAIT_MS},
+    {.sd_cs_pin = SD_CS_PIN},
+    {.sd_card_detect_pin = SD_CARD_DETECT_PIN},
+    {.sd_freq_kHz = SD_SPI_FREQ},
+    {.sd_mountpoint = SD_MOUNTPOINT},
+    {.sd_maxfiles = MAX_OPEN_FILES},
+    {.sd_format_if_empty = FORMAT_IF_EMPTY},
+
+    {.spi_cfg = {{
+                     .miso = SPI0_MISO, .mosi = SPI0_MOSI, .sck = SPI0_SCK,
+                     // .kHz = 0,
+                 },
+                 {
+                     .miso = SPI1_MISO, .mosi = SPI1_MOSI, .sck = SPI1_SCK,
+                     // .kHz = 0,
+                 }}},
+    {.i2c_cfg =
+         {
+             {.sda = I2C0_SDA, .scl = I2C0_SCL, .kHz = I2C0_KHZ},
+             {.sda = I2C1_SDA, .scl = I2C1_SCL, .kHz = I2C1_KHZ},
+         }},
+    {.log_format = LOG_STYLE},
+    {.log_commit_freq = LOG_COMMIT_FREQUENCY},
+    {.log_to_sd = true},
+#ifdef LITTLEFS_SUPPORT
+    {.lfs_format_if_empty = false},
+    {.lfs_maxfiles = MAX_OPEN_FILES},
+    {.lfs_mountpoint = LFS_MOUNTPOINT},
+    {.lfs_partition_label = LFS_PARTITION},
+#endif
+    {.max_psram_fwor_cache_pct = MAX_PSRAM_FOR_CACHE_PCT},
+    {.watchdog = -1.0},  // disabled for now
+#endif
 };
 
 uint32_t readBootCount(void) {

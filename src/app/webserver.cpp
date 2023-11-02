@@ -61,7 +61,8 @@ void recvMsg(uint8_t *data, size_t len) {
 }
 
 void wsRecvMsg(const void *data, size_t len) {
-  serialConsole.fmt("websocket got: '{:.*s}'", len, data);
+  // serialConsole.fmt("websocket got: '{:.*s}'", len, data);
+  serialConsole.fmt("wsRecvMsg");
 }
 
 void notFound(AsyncWebServerRequest *request) {

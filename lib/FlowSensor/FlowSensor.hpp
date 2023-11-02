@@ -3,11 +3,11 @@
 #include "Arduino.h"
 #include "FunctionalInterrupt.h"
 #include "esp_log.h"
+#include "driver/gpio.h"
 
 #define TOGGLE(pin) digitalWrite(pin, !digitalRead(pin))
 
 // based upon: https://forum.arduino.cc/t/interrupt-in-class-esp32/1039326/12
-
 
 typedef struct {
   uint32_t count;

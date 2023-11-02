@@ -15,16 +15,16 @@ void task_details(bool bitch, const char *taskName, TaskHandle_t handle) {
     t = xTaskGetHandle(taskName);
   }
   if (t == NULL) {
-    if (bitch)
-      LOGD("task: handle {} not found", t);
+    // if (bitch)
+    //   LOGD("task: handle {} not found", t);
     return;
   }
   if (taskName == NULL) {
     taskName = pcTaskGetName(handle);
   }
   if (taskName == NULL) {
-    if (bitch)
-      LOGD("task: name {} not found", t);
+    // if (bitch)
+    //   LOGD("task: name {} not found", t);
     return;
   }
   // affinity == '0x7fffffff' - no affinity, else core #

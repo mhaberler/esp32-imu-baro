@@ -73,21 +73,12 @@
 [submodule "lib/ESP32-PsRamFS"]
 	path = lib/ESP32-PsRamFS
 	url = https://github.com/mhaberler/ESP32-PsRamFS.git
-[submodule "lib/M5CoreS3"]
-	path = lib/M5CoreS3
-	url = https://github.com/mhaberler/M5CoreS3.git
-[submodule "lib/M5Unified"]
-	path = lib/M5Unified
-	url = https://github.com/mhaberler/M5Unified.git
 [submodule "lib/M5GFX"]
 	path = lib/M5GFX
 	url = https://github.com/mhaberler/M5GFX.git
 [submodule "lib/SdFat"]
 	path = lib/SdFat
 	url = https://github.com/mhaberler/SdFat.git
-[submodule "lib/NimBLE-Arduino"]
-	path = lib/NimBLE-Arduino
-	url = https://github.com/mhaberler/NimBLE-Arduino.git
 [submodule "lib/AsyncTCP"]
 	path = lib/AsyncTCP
 	url = https://github.com/BalloonWare/AsyncTCP.git
@@ -100,3 +91,9 @@
 [submodule "lib/decoder"]
 	path = lib/decoder
 	url = https://github.com/mhaberler/decoder.git
+[submodule "lib/NimBLE-Arduino"]
+	path = lib/NimBLE-Arduino
+	url = https://github.com/h2zero/NimBLE-Arduino
+[submodule "lib/M5Unified"]
+	path = lib/M5Unified
+	url = https://github.com/M5Stack/M5Unified
