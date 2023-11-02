@@ -10,7 +10,7 @@ NimBLEScan *pBLEScan;
 
 TheengsDecoder decoder;
 
-static StaticJsonDocument<512> doc;
+// static StaticJsonDocument<512> doc;
 
 class ScanCallbacks : public BLEAdvertisedDeviceCallbacks {
    public:
@@ -44,7 +44,8 @@ class ScanCallbacks : public BLEAdvertisedDeviceCallbacks {
 #endif
         char *manufacturerdata = NULL;
         _config->ble_ads += 1;
-#if 0
+#if 1
+        DynamicJsonDocument doc(2048);
         JsonObject BLEdata = doc.to<JsonObject>();
 
         const BLEsensor_t *bp = findSensor(advertisedDevice->getAddress());
@@ -85,6 +86,13 @@ class ScanCallbacks : public BLEAdvertisedDeviceCallbacks {
                 BLEdata["servicedatauuid"] = (char *)serviceDatauuid.c_str();
             }
         }
+        if (_opt->trace & INFO_BLE_ADS) {
+            LOGD("undecoded: sensor={} mac={} mfd={} rssi={}",
+                 (char *)&bp->name, mac_adress.c_str(),
+                 manufacturerdata ? manufacturerdata : "",
+                 advertisedDevice->getRSSI());
+        }
+#if 0
         int success = decoder.decodeBLEJson(BLEdata);
         if (_opt->trace & INFO_BLE_SENSORS) {
             Serial.printf("sensor %s: ", bp->name);
@@ -133,7 +141,7 @@ class ScanCallbacks : public BLEAdvertisedDeviceCallbacks {
             // }
         }
         if (manufacturerdata) free(manufacturerdata);
-
+#endif
 #ifdef TRACE2_PIN
         digitalWrite(TRACE2_PIN, LOW);
 #endif
@@ -167,8 +175,7 @@ void setupBLE(options_t &opt, config_t &config) {
     pBLEScan->setFilterPolicy(BLE_HCI_SCAN_FILT_NO_WL);
 
     // Set the callback for when devices are discovered, no duplicates.
-    pBLEScan->setScanCallbacks(new ScanCallbacks(&opt, &config),
-                                           false);
+    pBLEScan->setScanCallbacks(new ScanCallbacks(&opt, &config), false);
     pBLEScan->setActiveScan(
         false);  // save power - we do not need the display name
 
