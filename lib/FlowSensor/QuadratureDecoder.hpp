@@ -16,7 +16,7 @@ typedef struct {
 } qsensor_report_t;
 
 class QuadratureDecoder;
-static void IRAM_ATTR pinChange(QuadratureDecoder *q);
+static void IRAM_ATTR qPinChange(QuadratureDecoder *q);
 
 class QuadratureDecoder {
 public:
@@ -51,13 +51,13 @@ public:
     pinMode(pinA_, inputMode_);
     pinMode(pinB_, inputMode_);
     if (sampleTickMsec_ > 0) {
-      sampleTicker_.attach_ms(sampleTickMsec_, pinChange, this);
+      sampleTicker_.attach_ms(sampleTickMsec_, qPinChange, this);
       irq_mode_ = false;
     } else {
-      attachInterrupt(digitalPinToInterrupt(pinA_), std::bind(pinChange, this),
+      attachInterrupt(digitalPinToInterrupt(pinA_), std::bind(qPinChange, this),
                       edge_);
 
-      attachInterrupt(digitalPinToInterrupt(pinB_), std::bind(pinChange, this),
+      attachInterrupt(digitalPinToInterrupt(pinB_), std::bind(qPinChange, this),
                       edge_);
       irq_mode_ = true;
     }
@@ -93,7 +93,7 @@ public:
   int16_t pinB(void) { return pinB_;}
   uint32_t numIrqs(void) { return updates_;}
   
-  friend void pinChange(QuadratureDecoder *q);
+  friend void qPinChange(QuadratureDecoder *q);
 
 private:
   int16_t pinA_, pinB_;
@@ -140,7 +140,7 @@ private:
   }
 };
 
-static void IRAM_ATTR pinChange(QuadratureDecoder *q) {
+static void IRAM_ATTR qPinChange(QuadratureDecoder *q) {
   int8_t diff;
   q->lastSample_ = micros();
   q->current_ = 0;
@@ -153,15 +153,15 @@ static void IRAM_ATTR pinChange(QuadratureDecoder *q) {
   diff = q->last_ - q->current_;     // difference last - current_
   if (diff & 1) {                    // bit 0 = value (1)
     q->last_ = q->current_;          // store current as next last
-    q->enc_delta_ += (diff & 2) - 1; // bit 1 = direction (+/-)
+    q->enc_delta_ = q->enc_delta_ + (diff & 2) - 1; // bit 1 = direction (+/-)
   }
   if (diff != 0) {
     int8_t n = q->encode_read(q->step_);
     if (n != 0) {
-      q->count_ += n;
+      q->count_ = q->count_ + n;
       q->qLastChangeAt_ = q->lastSample_;
     }
   }
-  q->updates_++;
+  q->updates_ =   q->updates_ + 1;
   // counter mode
 }

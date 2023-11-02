@@ -90,13 +90,13 @@ private:
 #ifdef ISR_PIN
     TOGGLE(ISR_PIN);
 #endif
-    irqs_++;
+    irqs_ = irqs_ + 1;
 
     unsigned long now = micros();
     if ((now - lastEdge_) < bounceDeltaT_) {
-      bounces_++;
+      bounces_ = bounces_ + 1;
     } else {
-      count_++;
+      count_ = count_ + 1;
     }
     changed_ = true;
     lastEdge_ = now;

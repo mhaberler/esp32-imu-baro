@@ -115,9 +115,6 @@ extern TinyGPSPlus serialGps;
 #include "TreeWalker.hpp"
 #endif
 
-#include <FlowSensor.hpp>
-#include <QuadratureDecoder.hpp>
-
 #ifdef LITTLEFS
 #include <LittleFS.h>
 #endif
@@ -137,9 +134,9 @@ extern TinyGPSPlus serialGps;
 #define B2S(x)  ((x) ? "true" : "false")
 #define T2OK(x) ((x) ? "OK" : "FAILED")
 
-#define RAD2DEG(r) ((r)*57.29577951f)
-#define DEG2RAD(d) ((d)*0.017453292f)
-#define G2MG(d)    ((d)*1000.)
+#define RAD2DEG(r) ((r) * 57.29577951f)
+#define DEG2RAD(d) ((d) * 0.017453292f)
+#define G2MG(d)    ((d) * 1000.)
 
 #define TOGGLE(pin) digitalWrite(pin, !digitalRead(pin))
 
@@ -729,5 +726,4 @@ extern Adafruit_BNO08x *bno08x
     extern Adafruit_MPU6050 *mpu6050;
 extern MPU9250_DMP *mpu9250_dmp;
 extern Adafruit_MPU6886 *mpu6886;
-extern FlowSensor flow_sensor;
-extern QuadratureDecoder quad_sensor;
+

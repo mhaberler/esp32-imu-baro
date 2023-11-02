@@ -1,6 +1,10 @@
-#include "FlowSensor.hpp"
 #include "defs.hpp"
 #include "probe.hpp"
+#include <FlowSensor.hpp>
+#include <QuadratureDecoder.hpp>
+
+FlowSensor flow_sensor;
+QuadratureDecoder quad_sensor;
 
 void initOtherSensors(options_t &options, config_t &config) {
     const i2c_probe_t **dev;

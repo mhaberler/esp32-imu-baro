@@ -40,8 +40,7 @@ MPU9250_DMP *mpu9250_dmp;
 Adafruit_MPU6886 *mpu6886;
 Adafruit_INA219 *ina219;
 Adafruit_TMP117 *tmp117;
-FlowSensor flow_sensor;
-QuadratureDecoder quad_sensor;
+
 
 void setSensorRate(const float hz);
 

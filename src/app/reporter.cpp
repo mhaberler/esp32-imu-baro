@@ -3,10 +3,16 @@
 #include "defs.hpp"
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h>
 
+#include <FlowSensor.hpp>
+#include <QuadratureDecoder.hpp>
+
 extern TripleBuffer<sensor_state_t> triple_buffer;
 extern TimerStats customImuStats, imuStats, slowSensorStats;
 extern Queue slowSensors;
 extern Queue bleSensors;
+extern FlowSensor flow_sensor;
+extern QuadratureDecoder quad_sensor;
+
 
 TimerStats reporterStats, customReporterStats;
 

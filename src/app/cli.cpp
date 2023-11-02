@@ -5,6 +5,12 @@
 #include <WiFi.h>
 #include <NimBLEDevice.h>
 
+#include <FlowSensor.hpp>
+#include <QuadratureDecoder.hpp>
+
+extern FlowSensor flow_sensor;
+extern QuadratureDecoder quad_sensor;
+
 CmdCallback<NUM_COMMANDS> cmdCallback;
 CmdBuffer<CMD_BUFSIZE> buffer;
 CmdParser shell;
