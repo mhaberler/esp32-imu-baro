@@ -45,7 +45,7 @@ class ScanCallbacks : public NimBLEScanCallbacks {
         digitalWrite(TRACE2_PIN, HIGH);
 #endif
         _config->ble_ads += 1;
-
+#if 0
         JsonObject BLEdata = doc.to<JsonObject>();
 
         const BLEsensor_t *bp = findSensor(advertisedDevice->getAddress());
@@ -126,6 +126,7 @@ class ScanCallbacks : public NimBLEScanCallbacks {
         }
 #ifdef TRACE2_PIN
         digitalWrite(TRACE2_PIN, LOW);
+#endif
 #endif
     }
     options_t *_opt;

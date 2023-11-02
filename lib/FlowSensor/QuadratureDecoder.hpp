@@ -49,7 +49,7 @@ public:
       return false;
     }
     pinMode(pinA_, inputMode_);
-    pinMode(pinA_, inputMode_);
+    pinMode(pinB_, inputMode_);
     if (sampleTickMsec_ > 0) {
       sampleTicker_.attach_ms(sampleTickMsec_, pinChange, this);
       irq_mode_ = false;

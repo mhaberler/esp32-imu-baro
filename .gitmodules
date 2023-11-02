@@ -91,9 +91,9 @@
 [submodule "lib/decoder"]
 	path = lib/decoder
 	url = https://github.com/mhaberler/decoder.git
-[submodule "lib/NimBLE-Arduino"]
-	path = lib/NimBLE-Arduino
-	url = https://github.com/h2zero/NimBLE-Arduino
 [submodule "lib/M5Unified"]
 	path = lib/M5Unified
 	url = https://github.com/M5Stack/M5Unified
+[submodule "lib/esp-nimble-cpp"]
+	path = lib/esp-nimble-cpp
+	url = https://github.com/mhaberler/esp-nimble-cpp.git
