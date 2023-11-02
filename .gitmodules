@@ -94,6 +94,3 @@
 [submodule "lib/M5Unified"]
 	path = lib/M5Unified
 	url = https://github.com/M5Stack/M5Unified
-[submodule "lib/esp-nimble-cpp"]
-	path = lib/esp-nimble-cpp
-	url = https://github.com/mhaberler/esp-nimble-cpp.git
