@@ -10,6 +10,9 @@ NimBLEScan *pBLEScan;
 
 TheengsDecoder decoder;
 
+bool active  = true;
+int scanTime = 5 * 1000;  // In milliseconds, 0 = scan forever
+
 // static StaticJsonDocument<512> doc;
 
 class ScanCallbacks : public BLEAdvertisedDeviceCallbacks {
@@ -36,6 +39,15 @@ class ScanCallbacks : public BLEAdvertisedDeviceCallbacks {
             }
         }
         return NULL;
+    }
+    // restart 
+    void onScanEnd(NimBLEScanResults results) {
+        Serial.println("initial active Scan Ended");
+        active = false;
+        scanTime = 0;
+        pBLEScan->setActiveScan(active);
+        Serial.printf("scan restart, active = %u\n", active);
+        pBLEScan->start(scanTime);
     }
 
     void onResult(BLEAdvertisedDevice *advertisedDevice) {
@@ -177,7 +189,7 @@ void setupBLE(options_t &opt, config_t &config) {
     // Set the callback for when devices are discovered, no duplicates.
     pBLEScan->setScanCallbacks(new ScanCallbacks(&opt, &config), false);
     pBLEScan->setActiveScan(
-        false);  // save power - we do not need the display name
+        active);  // save power by setting to false - we do not need the display name
 
     pBLEScan->setInterval(
         97);  // How often the scan occurs / switches channels; in milliseconds,
@@ -193,10 +205,10 @@ void BLEscanOnce(options_t &options, config_t &config) {
 #ifdef TRACE1_PIN
         digitalWrite(TRACE1_PIN, HIGH);
 #endif
-        // Start scan with: duration = 1 seconds(forever), no scan end callback,
+        // Start initial active scan
         // not a continuation of a previous scan.
 
-        pBLEScan->start(0, false);
+        pBLEScan->start(scanTime, false);
 #ifdef TRACE1_PIN
         digitalWrite(TRACE1_PIN, LOW);
 #endif

@@ -50,7 +50,6 @@ Adafruit_TSL2591 *tsl2591;
 INA226 *ina226;
 Adafruit_TMP117 *tmp117;
 
-
 void setSensorRate(const float hz);
 
 bool motion_cal, psRAMavail;
@@ -227,10 +226,9 @@ bool init_calibration(options_t &opt, config_t &config) {
 }
 
 void setup(void) {
-
-// #ifdef STARTUP_DELAY
-//     delay(STARTUP_DELAY);  // let USB settle
-// #endif
+    // #ifdef STARTUP_DELAY
+    //     delay(STARTUP_DELAY);  // let USB settle
+    // #endif
 
 #ifdef M5UNIFIED
     auto cfg            = M5.config();
@@ -319,7 +317,7 @@ void setup(void) {
     i2c_cfg_t *ip = &options.i2c_cfg[0];
     if (ip->kHz > 0) {
         LOGD("In_I2C/Wire params: sda={} scl={} speed={} port={}", ip->sda,
-             ip->scl, ip->kHz,  (int)  M5.In_I2C.getPort());
+             ip->scl, ip->kHz, (int)M5.In_I2C.getPort());
         M5.In_I2C.begin((i2c_port_t)0, ip->sda, ip->scl);
 
         if (M5.In_I2C.getPort()) {
@@ -335,7 +333,7 @@ void setup(void) {
     ip = &options.i2c_cfg[1];
     if (ip->kHz > 0) {
         LOGD("Ex_I2C/Wire1 params: sda={} scl={} speed={} port={}", ip->sda,
-             ip->scl, ip->kHz, (int) M5.Ex_I2C.getPort());
+             ip->scl, ip->kHz, (int)M5.Ex_I2C.getPort());
         M5.Ex_I2C.begin((i2c_port_t)1, ip->sda, ip->scl);
         if (M5.Ex_I2C.getPort()) {
             config.i2c_avail[1] =
@@ -421,17 +419,10 @@ void setup(void) {
 #if defined(BLE_DECODER)
     if (options.ble_rate > 0) {
         setupBLE(options, config);
-
-        bleScanTask = new CyclicTask(
-            "blescan", options.ble_stack, options.ble_prio,
-            []() { BLEscanOnce(options, config); }, 1000.0 / options.ble_rate);
-        bleScanTask->setRate(1000.0 / options.ble_rate);
-        if (!bleScanTask->Start(options.ble_core)) {
-            LOGE("failed to start blescan task!");
-            heap_report(NULL, 0);
-        }
+        BLEscanOnce(options, config);
     }
 #endif
+
     task_report(__FILE__, __LINE__, 2, "sensor", "reporter", NULL);
     heap_report(__FILE__, __LINE__);
 
