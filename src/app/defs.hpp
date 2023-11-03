@@ -755,7 +755,9 @@ extern Adafruit_Sensor *gyroscope;
 extern Adafruit_BMP3XX *bmp;
 extern Adafruit_LPS22 *lps;
 extern Adafruit_DPS310 *dps3xx;
+#ifdef DRV_INA219
 extern Adafruit_INA219 *ina219;
+#endif
 extern INA226 *ina226;
 extern Adafruit_TMP117 *tmp117;
 extern Adafruit_TSL2591 *tsl2591;

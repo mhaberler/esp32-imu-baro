@@ -54,14 +54,14 @@ void initOtherSensors(options_t &options, config_t &config) {
         // tmp117 = dps3xx->getPressureSensor();
         // tmp117->printSensorDetails();
     }
-
+#ifdef DRV_INA219
     dev = &config.dev[I2C_INA219];
     // ina219 = new Adafruit_INA219();
     *dev = probe_dev("ina219", ina219_devs);
     if (*dev) {
         ina219->setCalibration_32V_2A();
     }
-
+#endif
     dev  = &config.dev[I2C_INA226];
     *dev = probe_dev("ina226", ina226_devs);
     if (*dev) {

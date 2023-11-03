@@ -74,12 +74,14 @@ static bool tmp117_probe(TwoWire *bus, const i2c_probe_t &p) {
     return rc;
 }
 
+#ifdef DRV_INA219
 static bool ina219_probe(TwoWire *bus, const i2c_probe_t &p) {
     ina219  = new Adafruit_INA219(p.addr);
     bool rc = ina219->begin(bus, false);
     if (!rc) delete ina219;
     return rc;
 }
+#endif
 
 static bool ina226_probe(TwoWire *bus, const i2c_probe_t &p) {
     ina226  = new INA226(p.addr, bus);
@@ -225,10 +227,12 @@ static const i2c_probe_t _tmp117_devs[] = {
 const i2c_probe_t *tmp117_devs = &_tmp117_devs[0];
 
 static const i2c_probe_t _ina219_devs[] = {
+#ifdef DRV_INA219
     {EXT_I2C, INA219_CALC_ADDRESS(0, 0), ina219_probe, NULL},
     {EXT_I2C, INA219_CALC_ADDRESS(0, 1), ina219_probe, NULL},
     {EXT_I2C, INA219_CALC_ADDRESS(1, 0), ina219_probe, NULL},
     {EXT_I2C, INA219_CALC_ADDRESS(1, 1), ina219_probe, NULL},
+#endif
 #ifndef PLATFORM_M5CORES3  // collides with ES7210 at Wire0 0x40
     {INT_I2C, INA219_CALC_ADDRESS(0, 0), ina219_probe, NULL},
     {INT_I2C, INA219_CALC_ADDRESS(0, 1), ina219_probe, NULL},

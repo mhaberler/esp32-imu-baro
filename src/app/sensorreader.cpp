@@ -369,6 +369,7 @@ void handleSensors(void) {
                 break;
 
             case 3:
+#ifdef DRV_INA219
                 if (config.dev[I2C_INA219]) {
                     slowSensorReport_t slow;
 
@@ -380,6 +381,7 @@ void handleSensors(void) {
                     slow.timestamp           = abs_timestamp(config);
                     slowSensors.Enqueue(&slow);
                 }
+#endif
                 if (config.dev[I2C_INA226]) {
                     slowSensorReport_t slow;
 
